@@ -162,7 +162,13 @@ const NavItems = memo(function NavItems({
             )}
             aria-current={isActive ? "page" : undefined}
           >
-            <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive && "neon-blue")} />
+            <item.icon
+              className={cn(
+                collapsed ? "h-6 w-6" : "h-5 w-5",
+                "flex-shrink-0",
+                isActive && "neon-blue"
+              )}
+            />
             {!collapsed && <span>{item.name}</span>}
           </Link>
         )
