@@ -5,6 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { priceMatch, searchPriceItems, PriceItem } from "@/lib/api"
+import { saveQuotation } from "@/lib/quotation-store"
+import { formatCurrency } from "@/lib/utils"
+import { useRouter } from "next/navigation"
 import { useApiKeys } from "@/contexts/api-keys-context"
 import { SearchInput } from "@/components/ui/search-input"
 
@@ -22,6 +25,7 @@ interface Row extends MatchResult {
 
 export function PriceMatchModule() {
   const { openaiKey, cohereKey, geminiKey } = useApiKeys()
+  const router = useRouter()
   const [file, setFile] = useState<File | null>(null)
   const [results, setResults] = useState<Row[] | null>(null)
   const [loading, setLoading] = useState(false)
@@ -93,17 +97,29 @@ export function PriceMatchModule() {
 
   const handleSave = () => {
     if (!results) return
-    const items = results.map(r => {
+    const items = results.map((r, idx) => {
       const sel = typeof r.selected === 'number' ? r.matches[r.selected] : null
       const rate = r.rateOverride ?? sel?.unitRate ?? 0
       return {
+        id: idx + 1,
         description: r.inputDescription,
         quantity: r.quantity,
         unit: sel?.unit || '',
-        rate,
+        unitPrice: rate,
         total: rate * r.quantity * (1 - discount / 100)
       }
     })
+    const value = items.reduce((s, i) => s + i.total, 0)
+    const quotation = {
+      id: `QT-${Date.now()}`,
+      client: 'Unknown Client',
+      project: 'Matched Quote',
+      value,
+      status: 'pending',
+      date: new Date().toISOString(),
+      items
+    }
+    saveQuotation(quotation)
     const blob = new Blob([JSON.stringify({ discount, items }, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -111,6 +127,8 @@ export function PriceMatchModule() {
     a.download = 'quotation.json'
     a.click()
     URL.revokeObjectURL(url)
+    alert(`Quotation saved. Total: ${formatCurrency(value)}`)
+    router.push(`/quotations/${quotation.id}`)
   }
 
   return (
@@ -147,6 +165,7 @@ export function PriceMatchModule() {
                   <th className="px-2 py-1">Description</th>
                   <th className="px-2 py-1">Qty</th>
                   <th className="px-2 py-1">Match</th>
+                  <th className="px-2 py-1">Unit</th>
                   <th className="px-2 py-1">Rate</th>
                   <th className="px-2 py-1">Conf.</th>
                   <th className="px-2 py-1">Total</th>
@@ -202,6 +221,7 @@ export function PriceMatchModule() {
                           </div>
                         )}
                       </td>
+                      <td className="px-2 py-1">{sel?.unit || ''}</td>
                       <td className="px-2 py-1">
                         <Input
                           type="number"
@@ -213,13 +233,23 @@ export function PriceMatchModule() {
                         />
                       </td>
                       <td className="px-2 py-1">{sel?.confidence ?? ''}</td>
-                      <td className="px-2 py-1">
-                        {rate ? `${(total).toLocaleString()} ${sel?.unit || ''}` : ''}
-                      </td>
+                      <td className="px-2 py-1">{rate ? total.toLocaleString() : ''}</td>
                     </tr>
                   )
                 })}
               </tbody>
+              <tfoot>
+                <tr className="border-t border-white/10 text-white">
+                  <td colSpan={6} className="text-right px-2 py-1 font-semibold">Total</td>
+                  <td className="px-2 py-1 font-semibold">
+                    {results.reduce((sum, r) => {
+                      const sel = typeof r.selected === 'number' ? r.matches[r.selected] : null
+                      const rate = r.rateOverride ?? sel?.unitRate ?? 0
+                      return sum + rate * r.quantity * (1 - discount / 100)
+                    }, 0).toLocaleString()}
+                  </td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         )}

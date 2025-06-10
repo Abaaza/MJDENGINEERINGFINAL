@@ -9,8 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Eye, Edit, Download, Filter, Search } from "lucide-react"
 import Link from "next/link"
 import { useMobileOptimization } from "@/components/mobile-optimization-provider"
-import { cn } from "@/lib/utils"
-import { getProjects, type Project } from "@/lib/api"
+import { cn, formatCurrency, formatDate } from "@/lib/utils"
+import { loadQuotations } from "@/lib/quotation-store"
 
 interface Quotation {
   id: string
@@ -30,22 +30,18 @@ export function QuotationGrid() {
   const [visibleQuotations, setVisibleQuotations] = useState<Quotation[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
- useEffect(() => {
-    getProjects()
-      .then((projects) => {
-        const mapped = projects.map((p: Project) => ({
-          id: p.id,
-          client: p.client,
-          project: p.type,
-          value: p.value ? `$${p.value.toLocaleString()}` : "$0",
-          status: p.status.toLowerCase(),
-          date: p.due ? new Date(p.due).toISOString().split("T")[0] : "",
-          items: 0,
-        }))
-        setQuotations(mapped)
-        setVisibleQuotations(mapped)
-      })
-      .catch((err) => console.error(err))
+  useEffect(() => {
+    const stored = loadQuotations().map(q => ({
+      id: q.id,
+      client: q.client,
+      project: q.project,
+      value: formatCurrency(q.value),
+      status: q.status,
+      date: formatDate(q.date),
+      items: q.items.length
+    }))
+    setQuotations(stored)
+    setVisibleQuotations(stored)
   }, [])
 
   // Debounced search function

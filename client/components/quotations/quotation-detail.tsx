@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, memo } from "react"
+import { useState, useEffect, memo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -11,6 +11,8 @@ import { ClientDrawer } from "@/components/clients/client-drawer"
 import { UploadModule } from "@/components/upload/upload-module"
 import { ArrowLeft, Edit, Save, Send, User } from "lucide-react"
 import Link from "next/link"
+import { getQuotation, saveQuotation, QuotationItem } from "@/lib/quotation-store"
+import { formatCurrency } from "@/lib/utils"
 
 interface QuotationDetailProps {
   quotationId: string
@@ -26,10 +28,10 @@ interface QuotationData {
   id: string
   client: string
   project: string
-  value: string
+  value: number
   status: string
   date: string
-  items: number
+  items: QuotationItem[]
   description: string
   timeline: TimelineItem[]
 }
@@ -38,24 +40,28 @@ export const QuotationDetail = memo(function QuotationDetail({ quotationId }: Qu
   const [isEditing, setIsEditing] = useState(false)
   const [showClientDrawer, setShowClientDrawer] = useState(false)
 
-  // Mock data - in real app, this would come from API
-  const quotation: QuotationData = {
-    id: quotationId,
-    client: "Metro Construction Ltd.",
-    project: "Downtown Office Complex",
-    value: "$1,250,000",
-    status: "pending",
-    date: "2024-01-15",
-    items: 45,
-    description:
-      "Complete construction quotation for a 15-story office complex including structural work, MEP systems, and finishing.",
-    timeline: [
-      { status: "created", date: "2024-01-15", description: "Quotation created" },
-      { status: "uploaded", date: "2024-01-15", description: "Excel file uploaded" },
-      { status: "processing", date: "2024-01-15", description: "Pricing logic applied" },
-      { status: "review", date: "2024-01-16", description: "Under review by engineering team" },
-    ],
-  }
+  const [quotation, setQuotation] = useState<QuotationData | null>(null)
+  const [items, setItems] = useState<QuotationItem[]>([])
+
+  useEffect(() => {
+    const q = getQuotation(quotationId)
+    if (q) {
+      setQuotation({
+        id: q.id,
+        client: q.client,
+        project: q.project,
+        value: q.value,
+        status: q.status,
+        date: q.date,
+        items: q.items,
+        description: '',
+        timeline: [{ status: 'created', date: q.date, description: 'Quotation created' }]
+      })
+      setItems(q.items)
+    }
+  }, [quotationId])
+
+  if (!quotation) return <p className="text-white">Quotation not found</p>
 
   return (
     <div className="space-y-6">
@@ -85,7 +91,14 @@ export const QuotationDetail = memo(function QuotationDetail({ quotationId }: Qu
           </Button>
           <Button
             variant="outline"
-            onClick={() => setIsEditing(!isEditing)}
+            onClick={() => {
+              if (isEditing && quotation) {
+                const value = items.reduce((s, i) => s + i.total, 0)
+                saveQuotation({ ...quotation, items, value })
+                setQuotation({ ...quotation, items, value })
+              }
+              setIsEditing(!isEditing)
+            }}
             className="w-full sm:w-auto border-white/20 hover:bg-white/10 ripple"
           >
             {isEditing ? <Save className="h-4 w-4 mr-2" /> : <Edit className="h-4 w-4 mr-2" />}
@@ -125,7 +138,7 @@ export const QuotationDetail = memo(function QuotationDetail({ quotationId }: Qu
             </TabsList>
 
             <TabsContent value="items" className="mt-6">
-              <EditableTable isEditing={isEditing} />
+              <EditableTable isEditing={isEditing} initialItems={items} onItemsChange={setItems} />
             </TabsContent>
 
             <TabsContent value="documents" className="mt-6">
@@ -155,19 +168,15 @@ export const QuotationDetail = memo(function QuotationDetail({ quotationId }: Qu
             <CardContent className="space-y-4">
               <div className="flex justify-between">
                 <span className="text-gray-400">Total Items:</span>
-                <span className="text-white font-semibold">{quotation.items}</span>
+                <span className="text-white font-semibold">{items.length}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Subtotal:</span>
-                <span className="text-white font-semibold">$1,125,000</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Tax (10%):</span>
-                <span className="text-white font-semibold">$112,500</span>
+                <span className="text-gray-400">Total:</span>
+                <span className="text-white font-semibold">{formatCurrency(items.reduce((s,i)=>s+i.total,0))}</span>
               </div>
               <div className="flex justify-between border-t border-white/10 pt-4">
-                <span className="text-gray-400">Total:</span>
-                <span className="text-2xl font-bold neon-blue">{quotation.value}</span>
+                <span className="text-gray-400">Grand Total:</span>
+                <span className="text-2xl font-bold neon-blue">{formatCurrency(items.reduce((s,i)=>s+i.total,0))}</span>
               </div>
             </CardContent>
           </Card>
