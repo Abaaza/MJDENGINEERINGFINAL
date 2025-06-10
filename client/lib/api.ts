@@ -79,3 +79,18 @@ export async function changePassword(currentPassword: string, newPassword: strin
   if (!res.ok) throw new Error('Password update failed')
   return res.json()
 }
+
+export interface PriceItem {
+  _id?: string
+  code?: string
+  description: string
+  unit?: string
+  rate?: number
+}
+
+export async function searchPriceItems(query: string): Promise<PriceItem[]> {
+  const url = `${base}/api/prices/search?q=${encodeURIComponent(query)}`
+  const res = await fetch(url)
+  if (!res.ok) throw new Error('Search failed')
+  return res.json()
+}
