@@ -10,70 +10,43 @@ import { Eye, Edit, Download, Filter, Search } from "lucide-react"
 import Link from "next/link"
 import { useMobileOptimization } from "@/components/mobile-optimization-provider"
 import { cn } from "@/lib/utils"
+import { getProjects, type Project } from "@/lib/api"
 
-const quotations = [
-  {
-    id: "QT-2024-001",
-    client: "Metro Construction Ltd.",
-    project: "Downtown Office Complex",
-    value: "$1,250,000",
-    status: "pending",
-    date: "2024-01-15",
-    items: 45,
-  },
-  {
-    id: "QT-2024-002",
-    client: "Urban Developers Inc.",
-    project: "Residential Tower Phase 2",
-    value: "$890,000",
-    status: "in-progress",
-    date: "2024-01-12",
-    items: 32,
-  },
-  {
-    id: "QT-2024-003",
-    client: "City Infrastructure",
-    project: "Bridge Renovation Project",
-    value: "$2,100,000",
-    status: "completed",
-    date: "2024-01-10",
-    items: 67,
-  },
-  {
-    id: "QT-2024-004",
-    client: "Green Building Corp.",
-    project: "Sustainable Office Park",
-    value: "$750,000",
-    status: "rejected",
-    date: "2024-01-08",
-    items: 28,
-  },
-  {
-    id: "QT-2024-005",
-    client: "Industrial Solutions",
-    project: "Manufacturing Facility",
-    value: "$1,800,000",
-    status: "in-progress",
-    date: "2024-01-05",
-    items: 89,
-  },
-  {
-    id: "QT-2024-006",
-    client: "Retail Spaces LLC",
-    project: "Shopping Center Expansion",
-    value: "$950,000",
-    status: "pending",
-    date: "2024-01-03",
-    items: 41,
-  },
-]
+interface Quotation {
+  id: string
+  client: string
+  project: string
+  value: string
+  status: string
+  date: string
+  items: number
+}
 
 export function QuotationGrid() {
   const { isMobile } = useMobileOptimization()
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
-  const [visibleQuotations, setVisibleQuotations] = useState(quotations)
+  const [quotations, setQuotations] = useState<Quotation[]>([])
+  const [visibleQuotations, setVisibleQuotations] = useState<Quotation[]>([])
   const [isLoading, setIsLoading] = useState(false)
+
+ useEffect(() => {
+    getProjects()
+      .then((projects) => {
+        const mapped = projects.map((p: Project) => ({
+          id: p.id,
+          client: p.client,
+          project: p.type,
+          value: p.value ? `$${p.value.toLocaleString()}` : "$0",
+          status: p.status.toLowerCase(),
+          date: p.due ? new Date(p.due).toISOString().split("T")[0] : "",
+          items: 0,
+        }))
+        setQuotations(mapped)
+        setVisibleQuotations(mapped)
+      })
+      .catch((err) => console.error(err))
+  }, [])
 
   // Debounced search function
   const debouncedSearch = useCallback(
@@ -95,15 +68,13 @@ export function QuotationGrid() {
         setIsLoading(false)
       }, 150) // Reduced from 300ms to 150ms
     }, 300),
-    [],
+    [quotations],
   )
 
   useEffect(() => {
-    // Only trigger search if there's actual input
     if (searchTerm || statusFilter !== "all") {
       debouncedSearch(searchTerm, statusFilter)
     } else {
-      // Show all quotations immediately when no filters
       setVisibleQuotations(quotations)
       setIsLoading(false)
     }
@@ -111,7 +82,7 @@ export function QuotationGrid() {
     return () => {
       debouncedSearch.cancel()
     }
-  }, [searchTerm, statusFilter, debouncedSearch])
+  }, [searchTerm, statusFilter, debouncedSearch, quotations])
 
   const getStatusBadge = (status: string) => {
     const statusClasses = {
