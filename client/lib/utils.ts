@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
+import dayjs from "dayjs"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -35,11 +36,7 @@ export function formatCurrency(value: number, currency = "USD") {
 
 // Format date
 export function formatDate(date: string | Date) {
-  return new Intl.DateTimeFormat("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  }).format(new Date(date))
+  return dayjs(date).format("MMM D, YYYY")
 }
 
 // Throttle function
