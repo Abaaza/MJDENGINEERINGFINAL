@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, memo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -36,6 +36,7 @@ export function PriceMatchModule() {
   const logSrc = useRef<EventSource | null>(null)
   const [discountInput, setDiscountInput] = useState(0)
   const [discount, setDiscount] = useState(0)
+  const [visibleCount, setVisibleCount] = useState(50)
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0])
@@ -65,6 +66,7 @@ export function PriceMatchModule() {
         selected: r.matches.length ? 0 : 'manual',
         searchResults: []
       }))
+      setVisibleCount(50)
       setResults(rows)
     } catch (err) {
       console.error(err)
@@ -118,6 +120,78 @@ export function PriceMatchModule() {
       }
     })
   }
+
+  const showMore = () => {
+    if (results) {
+      setVisibleCount(v => Math.min(v + 50, results.length))
+    }
+  }
+
+  const PriceMatchRow = memo(function PriceMatchRow({ row, index }: { row: Row; index: number }) {
+    const sel = typeof row.selected === 'number' ? row.matches[row.selected] : null
+    const rate = row.rateOverride ?? sel?.unitRate ?? 0
+    const total = rate * row.quantity * (1 - discount / 100)
+    return (
+      <tr className="text-gray-300 border-t border-white/10 align-top">
+        <td className="px-2 py-1 w-48">{row.inputDescription}</td>
+        <td className="px-2 py-1">
+          <RadioGroup
+            className="space-y-1"
+            value={typeof row.selected === 'number' ? String(row.selected) : 'manual'}
+            onValueChange={val => handleSelect(index, val)}
+          >
+            {row.matches.map((m, i) => (
+              <div key={i} className="flex items-center space-x-1">
+                <RadioGroupItem value={String(i)} id={`sel-${index}-${i}`} />
+                <label htmlFor={`sel-${index}-${i}`} className="text-xs">{m.description}</label>
+              </div>
+            ))}
+            <div className="flex items-center space-x-1">
+              <RadioGroupItem value="manual" id={`sel-${index}-manual`} />
+              <label htmlFor={`sel-${index}-manual`} className="text-xs">Manual search...</label>
+            </div>
+          </RadioGroup>
+          {row.selected === 'manual' && (
+            <div className="mt-1 relative">
+              <SearchInput placeholder="Search prices" onChange={q => handleSearch(index, q)} />
+              {row.searchResults.length > 0 && (
+                <ul className="absolute z-10 bg-black border border-white/20 max-h-40 overflow-auto w-64">
+                  {row.searchResults.map(item => (
+                    <li
+                      key={item._id || item.code}
+                      className="px-2 py-1 hover:bg-white/10 cursor-pointer"
+                      onClick={() => chooseManual(index, item)}
+                    >
+                      {item.description}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </td>
+        <td className="px-2 py-1">
+          <Input
+            type="number"
+            value={row.quantity}
+            onChange={e => updateRow(index, r => ({ ...r, quantity: Number(e.target.value) }))}
+            className="bg-white/5 border-white/10 w-20"
+          />
+        </td>
+        <td className="px-2 py-1">{sel?.unit || ''}</td>
+        <td className="px-2 py-1">
+          <Input
+            type="number"
+            value={rate}
+            onChange={e => updateRow(index, r => ({ ...r, rateOverride: Number(e.target.value) }))}
+            className="bg-white/5 border-white/10 w-24"
+          />
+        </td>
+        <td className="px-2 py-1">{sel?.confidence ?? ''}</td>
+        <td className="px-2 py-1">{rate ? total.toLocaleString() : ''}</td>
+      </tr>
+    )
+  })
 
   const handleSave = () => {
     if (!results) return
@@ -213,75 +287,18 @@ export function PriceMatchModule() {
                 </tr>
               </thead>
               <tbody>
-                {results.map((r, idx) => {
-                  const sel = typeof r.selected === 'number' ? r.matches[r.selected] : null
-                  const rate = r.rateOverride ?? sel?.unitRate ?? 0
-                  const total = rate * r.quantity * (1 - discount / 100)
-                  return (
-                    <tr key={idx} className="text-gray-300 border-t border-white/10 align-top">
-                      <td className="px-2 py-1 w-48">{r.inputDescription}</td>
-                      <td className="px-2 py-1">
-                        <RadioGroup
-                          className="space-y-1"
-                          value={typeof r.selected === 'number' ? String(r.selected) : 'manual'}
-                          onValueChange={val => handleSelect(idx, val)}
-                        >
-                          {r.matches.map((m, i) => (
-                            <div key={i} className="flex items-center space-x-1">
-                              <RadioGroupItem value={String(i)} id={`sel-${idx}-${i}`} />
-                              <label htmlFor={`sel-${idx}-${i}`} className="text-xs">{m.description}</label>
-                            </div>
-                          ))}
-                          <div className="flex items-center space-x-1">
-                            <RadioGroupItem value="manual" id={`sel-${idx}-manual`} />
-                            <label htmlFor={`sel-${idx}-manual`} className="text-xs">Manual search...</label>
-                          </div>
-                        </RadioGroup>
-                        {r.selected === 'manual' && (
-                          <div className="mt-1 relative">
-                            <SearchInput placeholder="Search prices" onChange={q => handleSearch(idx, q)} />
-                            {r.searchResults.length > 0 && (
-                              <ul className="absolute z-10 bg-black border border-white/20 max-h-40 overflow-auto w-64">
-                                {r.searchResults.map(item => (
-                                  <li
-                                    key={item._id || item.code}
-                                    className="px-2 py-1 hover:bg-white/10 cursor-pointer"
-                                    onClick={() => chooseManual(idx, item)}
-                                  >
-                                    {item.description}
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-2 py-1">
-                        <Input
-                          type="number"
-                          value={r.quantity}
-                          onChange={e =>
-                            updateRow(idx, row => ({ ...row, quantity: Number(e.target.value) }))
-                          }
-                          className="bg-white/5 border-white/10 w-20"
-                        />
-                      </td>
-                      <td className="px-2 py-1">{sel?.unit || ''}</td>
-                      <td className="px-2 py-1">
-                        <Input
-                          type="number"
-                          value={rate}
-                          onChange={e =>
-                            updateRow(idx, row => ({ ...row, rateOverride: Number(e.target.value) }))
-                          }
-                          className="bg-white/5 border-white/10 w-24"
-                        />
-                      </td>
-                      <td className="px-2 py-1">{sel?.confidence ?? ''}</td>
-                      <td className="px-2 py-1">{rate ? total.toLocaleString() : ''}</td>
-                    </tr>
-                  )
-                })}
+                {results.slice(0, visibleCount).map((r, idx) => (
+                  <PriceMatchRow key={idx} row={r} index={idx} />
+                ))}
+                {results.length > visibleCount && (
+                  <tr>
+                    <td colSpan={7} className="p-2 text-center">
+                      <Button size="sm" onClick={showMore} className="bg-[#00D4FF]/20 hover:bg-[#00D4FF]/30 text-[#00D4FF] border-[#00D4FF]/30 ripple">
+                        Show More
+                      </Button>
+                    </td>
+                  </tr>
+                )}
               </tbody>
               <tfoot>
                 <tr className="border-t border-white/10 text-white">
