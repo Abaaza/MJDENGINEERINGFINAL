@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
 import { useMobileOptimization } from "@/components/mobile-optimization-provider"
+import { UserProfile } from "@/components/user/user-profile"
 
 interface SidebarProps {
   collapsed: boolean
@@ -151,13 +152,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
             {/* User Profile */}
             <div className="border-t border-white/10 p-4 safe-bottom">
-              <div className="flex items-center space-x-3">
-                <div className="h-8 w-8 rounded-full bg-gradient-to-r from-[#00D4FF] to-[#00FF88] flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">John Engineer</p>
-                  <p className="text-xs text-gray-400 truncate">Senior Engineer</p>
-                </div>
-              </div>
+              <UserProfile collapsed={false} />
             </div>
           </div>
         </div>
@@ -238,13 +233,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         {/* User Profile */}
         {!collapsed && (
           <div className="border-t border-white/10 p-4">
-            <div className="flex items-center space-x-3">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-r from-[#00D4FF] to-[#00FF88]" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">John Engineer</p>
-                <p className="text-xs text-gray-400 truncate">Senior Engineer</p>
-              </div>
-            </div>
+            <UserProfile collapsed={collapsed} />
           </div>
         )}
       </div>

@@ -5,6 +5,7 @@ import { nanoid } from 'nanoid';
 import User from '../models/User.js';
 import { signToken } from '../utils/jwt.js';
 import sampleUsers from '../sampleUsers.js';
+import auth from '../middlewares/auth.js';
 
 const router = Router();
 
@@ -105,6 +106,51 @@ router.post('/login', async (req, res) => {
 
   } catch (err) {
     console.error('[Login] Error:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+/* 🔑 Update password */
+router.patch('/password', auth, async (req, res) => {
+  try {
+    const body = safeParseBody(req);
+    const { currentPassword, newPassword } = body;
+    if (!currentPassword || !newPassword)
+      return res.status(400).json({ message: 'Missing fields' });
+
+    const user = await User.findById(req.user._id);
+    if (!user) return res.sendStatus(401);
+
+    const match = await bcrypt.compare(currentPassword, user.password);
+    if (!match) return res.status(400).json({ message: 'Incorrect password' });
+
+    user.password = newPassword;
+    await user.save();
+
+    res.json({ message: 'Password updated' });
+  } catch (err) {
+    console.error('[Password] Error:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+/* 📝 Update profile (name) */
+router.patch('/profile', auth, async (req, res) => {
+  try {
+    const body = safeParseBody(req);
+    const { name } = body;
+    if (!name) return res.status(400).json({ message: 'Missing name' });
+
+    const user = await User.findById(req.user._id);
+    if (!user) return res.sendStatus(401);
+
+    user.name = name;
+    await user.save();
+
+    const token = signToken({ id: user._id, name: user.name });
+    res.json({ token, user: { id: user._id, name: user.name } });
+  } catch (err) {
+    console.error('[Profile] Error:', err);
     res.status(500).json({ message: 'Internal server error' });
   }
 });

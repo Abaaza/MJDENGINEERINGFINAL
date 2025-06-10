@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { User, Bell, Shield, Palette, Key, Save } from "lucide-react"
 import { useApiKeys } from "@/contexts/api-keys-context"
+import { useAuth } from "@/contexts/auth-context"
 
 export function SettingsPanel() {
   const [notifications, setNotifications] = useState({
@@ -18,6 +19,23 @@ export function SettingsPanel() {
     sms: true,
   })
   const { openaiKey, cohereKey, geminiKey, setKeys } = useApiKeys()
+  const { user, updateName, changePassword } = useAuth()
+  const [name, setName] = useState(user?.name ?? '')
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+
+  const handleSaveProfile = async () => {
+    await updateName(name)
+  }
+
+  const handleChangePassword = async () => {
+    if (newPassword !== confirmPassword) return
+    await changePassword(currentPassword, newPassword)
+    setCurrentPassword('')
+    setNewPassword('')
+    setConfirmPassword('')
+  }
 
   return (
     <div className="max-w-4xl">
@@ -66,55 +84,19 @@ export function SettingsPanel() {
               <CardTitle className="text-white">Profile Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName" className="text-white">
-                    First Name
-                  </Label>
-                  <Input
-                    id="firstName"
-                    defaultValue="John"
-                    className="bg-white/5 border-white/10 focus:border-[#00D4FF] focus:ring-[#00D4FF]/20"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName" className="text-white">
-                    Last Name
-                  </Label>
-                  <Input
-                    id="lastName"
-                    defaultValue="Engineer"
-                    className="bg-white/5 border-white/10 focus:border-[#00D4FF] focus:ring-[#00D4FF]/20"
-                  />
-                </div>
-              </div>
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-white">
-                  Email
-                </Label>
+                <Label htmlFor="name" className="text-white">Name</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  defaultValue="john.engineer@company.com"
-                  className="bg-white/5 border-white/10 focus:border-[#00D4FF] focus:ring-[#00D4FF]/20"
+                  id="name"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  className="bg-white/5 border-white/10"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="role" className="text-white">
-                  Role
-                </Label>
-                <Select defaultValue="senior">
-                  <SelectTrigger className="bg-white/5 border-white/10">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="glass-effect border-white/10">
-                    <SelectItem value="senior">Senior Engineer</SelectItem>
-                    <SelectItem value="lead">Lead Engineer</SelectItem>
-                    <SelectItem value="manager">Project Manager</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button className="bg-gradient-to-r from-[#00D4FF] to-[#00FF88] hover:from-[#00D4FF]/80 hover:to-[#00FF88]/80 text-black font-semibold ripple">
+              <Button
+                onClick={handleSaveProfile}
+                className="bg-gradient-to-r from-[#00D4FF] to-[#00FF88] hover:from-[#00D4FF]/80 hover:to-[#00FF88]/80 text-black font-semibold ripple"
+              >
                 <Save className="h-4 w-4 mr-2" />
                 Save Changes
               </Button>
@@ -175,6 +157,8 @@ export function SettingsPanel() {
                 <Input
                   id="currentPassword"
                   type="password"
+                  value={currentPassword}
+                  onChange={e => setCurrentPassword(e.target.value)}
                   className="bg-white/5 border-white/10 focus:border-[#00D4FF] focus:ring-[#00D4FF]/20"
                 />
               </div>
@@ -185,6 +169,8 @@ export function SettingsPanel() {
                 <Input
                   id="newPassword"
                   type="password"
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
                   className="bg-white/5 border-white/10 focus:border-[#00D4FF] focus:ring-[#00D4FF]/20"
                 />
               </div>
@@ -195,10 +181,15 @@ export function SettingsPanel() {
                 <Input
                   id="confirmPassword"
                   type="password"
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
                   className="bg-white/5 border-white/10 focus:border-[#00D4FF] focus:ring-[#00D4FF]/20"
                 />
               </div>
-              <Button className="bg-gradient-to-r from-[#00D4FF] to-[#00FF88] hover:from-[#00D4FF]/80 hover:to-[#00FF88]/80 text-black font-semibold ripple">
+              <Button
+                onClick={handleChangePassword}
+                className="bg-gradient-to-r from-[#00D4FF] to-[#00FF88] hover:from-[#00D4FF]/80 hover:to-[#00FF88]/80 text-black font-semibold ripple"
+              >
                 Update Password
               </Button>
             </CardContent>
