@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -44,6 +45,12 @@ export default function LoginPage() {
             {error && <p className="text-red-500 text-sm">{error}</p>}
             <Button type="submit" className="w-full bg-gradient-to-r from-[#00D4FF] to-[#00FF88] text-black font-semibold">Login</Button>
           </form>
+          <p className="text-sm text-center text-gray-400 mt-4">
+            Don't have an account?{' '}
+            <Link href="/register" className="text-[#00D4FF] hover:underline">
+              Sign Up
+            </Link>
+          </p>
         </CardContent>
       </Card>
     </div>

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, FileText, Upload, Users, Settings, BarChart3, CircleDollarSign, ChevronLeft, X } from "lucide-react"
+import { FileText, Upload, Users, Settings, BarChart3, CircleDollarSign, ChevronLeft, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useEffect, useCallback, memo } from "react"
@@ -13,7 +13,6 @@ import { UserProfile } from "@/components/user/user-profile"
 import { useSwipeGesture } from "@/hooks/use-swipe-gesture"
 
 const navigation = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Quotations", href: "/quotations", icon: FileText },
   { name: "Price List", href: "/price-list", icon: CircleDollarSign },
   { name: "Upload", href: "/upload", icon: Upload },

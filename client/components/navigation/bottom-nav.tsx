@@ -4,13 +4,12 @@ import type React from "react"
 
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { LayoutDashboard, FileText, Upload, Users, Settings } from "lucide-react"
+import { FileText, Upload, Users, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useMobileOptimization } from "@/hooks/use-mobile-optimization"
 import { memo } from "react"
 
 const navItems = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Quotations", href: "/quotations", icon: FileText },
   { name: "Upload", href: "/upload", icon: Upload },
   { name: "Clients", href: "/clients", icon: Users },
