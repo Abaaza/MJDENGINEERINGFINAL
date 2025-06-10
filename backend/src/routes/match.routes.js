@@ -3,6 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import { openAiMatchFromFiles } from '../services/openAiService.js';
 import { cohereMatchFromFiles } from '../services/cohereService.js';
+import { matchFromFiles } from '../services/matchService.js';
 import { fileURLToPath } from 'url';
 
 
@@ -56,7 +57,8 @@ router.post('/', upload.single('file'), async (req, res) => {
         cohereKey
       );
     } else {
-      return res.status(400).json({ message: 'No API key provided' });
+      // Fallback to built-in matcher when no external API key is provided
+      results = matchFromFiles(PRICE_FILE, req.file.buffer);
     }
     console.log('Price match results:', results.length);
     res.json(results);
