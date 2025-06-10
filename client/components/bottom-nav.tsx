@@ -2,12 +2,11 @@
 
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { LayoutDashboard, FileText, Users, Settings } from "lucide-react"
+import { FileText, Users, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useMobileOptimization } from "@/components/mobile-optimization-provider"
 
 const navItems = [
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Quotations", href: "/quotations", icon: FileText },
   { name: "Clients", href: "/clients", icon: Users },
   { name: "Settings", href: "/settings", icon: Settings },
