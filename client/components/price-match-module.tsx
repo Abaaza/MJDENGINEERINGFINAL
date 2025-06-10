@@ -17,6 +17,7 @@ interface MatchResult {
 interface Row extends MatchResult {
   selected: number | 'manual'
   searchResults: PriceItem[]
+  rateOverride?: number
 }
 
 export function PriceMatchModule() {
@@ -24,6 +25,7 @@ export function PriceMatchModule() {
   const [file, setFile] = useState<File | null>(null)
   const [results, setResults] = useState<Row[] | null>(null)
   const [loading, setLoading] = useState(false)
+  const [discount, setDiscount] = useState(0)
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0])
@@ -89,6 +91,28 @@ export function PriceMatchModule() {
     })
   }
 
+  const handleSave = () => {
+    if (!results) return
+    const items = results.map(r => {
+      const sel = typeof r.selected === 'number' ? r.matches[r.selected] : null
+      const rate = r.rateOverride ?? sel?.unitRate ?? 0
+      return {
+        description: r.inputDescription,
+        quantity: r.quantity,
+        unit: sel?.unit || '',
+        rate,
+        total: rate * r.quantity * (1 - discount / 100)
+      }
+    })
+    const blob = new Blob([JSON.stringify({ discount, items }, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'quotation.json'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <Card className="glass-effect border-white/10">
       <CardHeader>
@@ -100,6 +124,22 @@ export function PriceMatchModule() {
           {loading ? "Matching..." : "Start Matching"}
         </Button>
         {results && (
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <span className="text-white">Discount %</span>
+              <Input
+                type="number"
+                value={discount}
+                onChange={e => setDiscount(Number(e.target.value))}
+                className="w-20 bg-white/5 border-white/20"
+              />
+            </div>
+            <Button onClick={handleSave} size="sm" className="bg-[#00FF88]/20 hover:bg-[#00FF88]/30 text-[#00FF88] border-[#00FF88]/30 ripple">
+              Save Quote
+            </Button>
+          </div>
+        )}
+        {results && (
           <div className="overflow-auto max-h-96">
             <table className="w-full text-sm text-left mt-4">
               <thead>
@@ -109,15 +149,27 @@ export function PriceMatchModule() {
                   <th className="px-2 py-1">Match</th>
                   <th className="px-2 py-1">Rate</th>
                   <th className="px-2 py-1">Conf.</th>
+                  <th className="px-2 py-1">Total</th>
                 </tr>
               </thead>
               <tbody>
                 {results.map((r, idx) => {
                   const sel = typeof r.selected === 'number' ? r.matches[r.selected] : null
+                  const rate = r.rateOverride ?? sel?.unitRate ?? 0
+                  const total = rate * r.quantity * (1 - discount / 100)
                   return (
                     <tr key={idx} className="text-gray-300 border-t border-white/10 align-top">
                       <td className="px-2 py-1 w-48">{r.inputDescription}</td>
-                      <td className="px-2 py-1">{r.quantity}</td>
+                      <td className="px-2 py-1">
+                        <Input
+                          type="number"
+                          value={r.quantity}
+                          onChange={e =>
+                            updateRow(idx, row => ({ ...row, quantity: Number(e.target.value) }))
+                          }
+                          className="bg-white/5 border-white/10 w-20"
+                        />
+                      </td>
                       <td className="px-2 py-1">
                         <select
                           className="bg-white/5 border-white/20 text-white text-xs"
@@ -150,8 +202,20 @@ export function PriceMatchModule() {
                           </div>
                         )}
                       </td>
-                      <td className="px-2 py-1">{sel?.unitRate ?? ''}</td>
+                      <td className="px-2 py-1">
+                        <Input
+                          type="number"
+                          value={rate}
+                          onChange={e =>
+                            updateRow(idx, row => ({ ...row, rateOverride: Number(e.target.value) }))
+                          }
+                          className="bg-white/5 border-white/10 w-24"
+                        />
+                      </td>
                       <td className="px-2 py-1">{sel?.confidence ?? ''}</td>
+                      <td className="px-2 py-1">
+                        {rate ? `${(total).toLocaleString()} ${sel?.unit || ''}` : ''}
+                      </td>
                     </tr>
                   )
                 })}
