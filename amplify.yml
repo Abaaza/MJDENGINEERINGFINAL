@@ -5,14 +5,20 @@ frontend:
       commands:
         # Install pnpm, which your project needs
         - npm install -g pnpm
-        # Go into the client directory
+        # Navigate into the client folder
         - cd client
         # Install dependencies with pnpm
         - pnpm install
     build:
       commands:
-        # IMPORTANT: Use pnpm to run the build script
+        # Use pnpm to run the build script for consistency
         - pnpm run build
+  artifacts:
+    # This is the crucial change.
+    # The 'standalone' output mode creates this specific directory.
+    baseDirectory: client/.next/standalone
+    files:
+      - "**/*"
   cache:
     paths:
       - client/node_modules/**/*
