@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { priceMatch, searchPriceItems, PriceItem } from "@/lib/api"
 import { saveQuotation } from "@/lib/quotation-store"
 import { formatCurrency } from "@/lib/utils"
@@ -29,6 +30,7 @@ export function PriceMatchModule() {
   const [file, setFile] = useState<File | null>(null)
   const [results, setResults] = useState<Row[] | null>(null)
   const [loading, setLoading] = useState(false)
+  const [discountInput, setDiscountInput] = useState(0)
   const [discount, setDiscount] = useState(0)
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -147,10 +149,17 @@ export function PriceMatchModule() {
               <span className="text-white">Discount %</span>
               <Input
                 type="number"
-                value={discount}
-                onChange={e => setDiscount(Number(e.target.value))}
+                value={discountInput}
+                onChange={e => setDiscountInput(Number(e.target.value))}
                 className="w-20 bg-white/5 border-white/20"
               />
+              <Button
+                size="sm"
+                onClick={() => setDiscount(discountInput)}
+                className="bg-[#00D4FF]/20 hover:bg-[#00D4FF]/30 text-[#00D4FF] border-[#00D4FF]/30 ripple"
+              >
+                Apply Discount
+              </Button>
             </div>
             <Button onClick={handleSave} size="sm" className="bg-[#00FF88]/20 hover:bg-[#00FF88]/30 text-[#00FF88] border-[#00FF88]/30 ripple">
               Save Quote
@@ -163,8 +172,8 @@ export function PriceMatchModule() {
               <thead>
                 <tr className="text-white">
                   <th className="px-2 py-1">Description</th>
-                  <th className="px-2 py-1">Qty</th>
                   <th className="px-2 py-1">Match</th>
+                  <th className="px-2 py-1">Qty</th>
                   <th className="px-2 py-1">Unit</th>
                   <th className="px-2 py-1">Rate</th>
                   <th className="px-2 py-1">Conf.</th>
@@ -180,28 +189,22 @@ export function PriceMatchModule() {
                     <tr key={idx} className="text-gray-300 border-t border-white/10 align-top">
                       <td className="px-2 py-1 w-48">{r.inputDescription}</td>
                       <td className="px-2 py-1">
-                        <Input
-                          type="number"
-                          value={r.quantity}
-                          onChange={e =>
-                            updateRow(idx, row => ({ ...row, quantity: Number(e.target.value) }))
-                          }
-                          className="bg-white/5 border-white/10 w-20"
-                        />
-                      </td>
-                      <td className="px-2 py-1">
-                        <select
-                          className="bg-white/5 border-white/20 text-white text-xs"
+                        <RadioGroup
+                          className="space-y-1"
                           value={typeof r.selected === 'number' ? String(r.selected) : 'manual'}
-                          onChange={e => handleSelect(idx, e.target.value)}
+                          onValueChange={val => handleSelect(idx, val)}
                         >
                           {r.matches.map((m, i) => (
-                            <option key={i} value={i}>
-                              {m.description}
-                            </option>
+                            <div key={i} className="flex items-center space-x-1">
+                              <RadioGroupItem value={String(i)} id={`sel-${idx}-${i}`} />
+                              <label htmlFor={`sel-${idx}-${i}`} className="text-xs">{m.description}</label>
+                            </div>
                           ))}
-                          <option value="manual">Manual search...</option>
-                        </select>
+                          <div className="flex items-center space-x-1">
+                            <RadioGroupItem value="manual" id={`sel-${idx}-manual`} />
+                            <label htmlFor={`sel-${idx}-manual`} className="text-xs">Manual search...</label>
+                          </div>
+                        </RadioGroup>
                         {r.selected === 'manual' && (
                           <div className="mt-1 relative">
                             <SearchInput placeholder="Search prices" onChange={q => handleSearch(idx, q)} />
@@ -220,6 +223,16 @@ export function PriceMatchModule() {
                             )}
                           </div>
                         )}
+                      </td>
+                      <td className="px-2 py-1">
+                        <Input
+                          type="number"
+                          value={r.quantity}
+                          onChange={e =>
+                            updateRow(idx, row => ({ ...row, quantity: Number(e.target.value) }))
+                          }
+                          className="bg-white/5 border-white/10 w-20"
+                        />
                       </td>
                       <td className="px-2 py-1">{sel?.unit || ''}</td>
                       <td className="px-2 py-1">
