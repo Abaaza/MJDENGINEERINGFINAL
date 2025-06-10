@@ -3,7 +3,7 @@ import Link from "next/link"
 import type React from "react"
 
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, FileText, Users, Settings, BarChart3, ChevronLeft, X } from "lucide-react"
+import { LayoutDashboard, FileText, Users, Settings, BarChart3, CircleDollarSign, ChevronLeft, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
@@ -19,6 +19,7 @@ const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Price Match", href: "/price-match", icon: FileText },
   { name: "Project Match", href: "/project-match", icon: FileText },
+  { name: "Price List", href: "/price-list", icon: CircleDollarSign },
   { name: "Clients", href: "/clients", icon: Users },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Settings", href: "/settings", icon: Settings },
