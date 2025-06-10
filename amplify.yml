@@ -1,21 +1,23 @@
 version: 1
 
-# This tells Amplify “my real app lives in the client folder”.
 applications:
-  - appRoot: client                 # 👈 monorepo hint
+  - appRoot: client          # 👈 tells Amplify “my real project lives here”
+
     frontend:
       phases:
         preBuild:
           commands:
-            - npm install -g pnpm   # global pnpm once
-            - pnpm install          # installs in client/
+            - npm install -g pnpm
+            - pnpm install
         build:
           commands:
-            - pnpm run build        # runs `next build`
+            - pnpm run build      # runs `next build` inside client/
+
       artifacts:
-        baseDirectory: .next        # ← default Next.js output
+        baseDirectory: .next      # path is **relative to client/** thanks to appRoot
         files:
           - '**/*'
+
       cache:
         paths:
-          - node_modules/**/*       # caches client/node_modules
+          - node_modules/**/*     # caches client/node_modules
