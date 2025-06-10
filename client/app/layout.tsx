@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { MobileOptimizationProvider } from "@/components/mobile-optimization-provider"
 import { AuthProvider } from "@/contexts/auth-context"
+import RequireAuth from "@/components/require-auth"
 import { ApiKeyProvider } from "@/contexts/api-keys-context"
 
 const inter = Inter({
@@ -55,7 +56,9 @@ export default function RootLayout({
           <MobileOptimizationProvider>
             <AuthProvider>
               <ApiKeyProvider>
-                {children}
+                <RequireAuth>
+                  {children}
+                </RequireAuth>
                 <Toaster />
               </ApiKeyProvider>
             </AuthProvider>

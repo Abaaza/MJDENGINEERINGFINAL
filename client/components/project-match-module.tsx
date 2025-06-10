@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table"
 import { Progress } from "@/components/ui/progress"
 import { useApiKeys } from "@/contexts/api-keys-context"
+import { useAuth } from "@/contexts/auth-context"
 import * as XLSX from "xlsx"
 
 interface MatchRow {
@@ -27,6 +28,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || ''
 
 export default function ProjectMatchModule(){
   const { openaiKey, cohereKey, geminiKey } = useApiKeys()
+  const { token } = useAuth()
   const [rows,setRows] = useState<MatchRow[]>([])
   const [loading,setLoading] = useState(false)
   const [progress,setProgress] = useState(0)
@@ -52,7 +54,12 @@ export default function ProjectMatchModule(){
     setProgress(0)
     timerRef.current = setInterval(()=>setProgress(p=>p<90?p+5:90),500)
     try{
-      const res = await fetch(`${API_URL}/api/match`,{method:'POST',body:form})
+      if(!token) throw new Error('No auth')
+      const res = await fetch(`${API_URL}/api/match`,{
+        method:'POST',
+        headers:{ Authorization: `Bearer ${token}` },
+        body:form
+      })
       if(!res.ok) throw new Error('Match failed')
       const data = await res.json()
       const formatted:MatchRow[] = data.map((r:any)=>{

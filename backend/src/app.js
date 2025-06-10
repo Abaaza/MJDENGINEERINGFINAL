@@ -11,6 +11,7 @@ import projectRoutes from './routes/project.routes.js';
 import boqRoutes from './routes/boq.routes.js';
 import matchRoutes from './routes/match.routes.js';
 import priceRoutes from './routes/price.routes.js';
+import auth from './middlewares/auth.js';
 
 const app = express();
 
@@ -21,9 +22,9 @@ app.use(express.json({ limit: '10mb', strict: false })); // important for Lambda
 
 // ✅ Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/projects', projectRoutes);
-app.use('/api/boq', boqRoutes);
-app.use('/api/match', matchRoutes);
-app.use('/api/prices', priceRoutes);
+app.use('/api/projects', auth, projectRoutes);
+app.use('/api/boq', auth, boqRoutes);
+app.use('/api/match', auth, matchRoutes);
+app.use('/api/prices', auth, priceRoutes);
 
 export default app;
