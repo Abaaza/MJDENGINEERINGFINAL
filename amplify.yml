@@ -1,24 +1,21 @@
 version: 1
-frontend:
-  phases:
-    preBuild:
-      commands:
-        # Install pnpm, which your project needs
-        - npm install -g pnpm
-        # Navigate into the client folder
-        - cd client
-        # Install dependencies with pnpm
-        - pnpm install
-    build:
-      commands:
-        # Use pnpm to run the build script for consistency
-        - pnpm run build
-  artifacts:
-    # This is the crucial change.
-    # The 'standalone' output mode creates this specific directory.
-    baseDirectory: client/.next/standalone
-    files:
-      - "**/*"
-  cache:
-    paths:
-      - client/node_modules/**/*
+
+# This tells Amplify “my real app lives in the client folder”.
+applications:
+  - appRoot: client                 # 👈 monorepo hint
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - npm install -g pnpm   # global pnpm once
+            - pnpm install          # installs in client/
+        build:
+          commands:
+            - pnpm run build        # runs `next build`
+      artifacts:
+        baseDirectory: .next        # ← default Next.js output
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - node_modules/**/*       # caches client/node_modules
