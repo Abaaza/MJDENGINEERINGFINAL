@@ -20,7 +20,13 @@ app.use(cors({ origin: '*', credentials: true }));
 // Increase body size limit for large price match payloads
 app.use(express.json({ limit: '10mb', strict: false })); // important for Lambda to parse body properly
 
-// ✅ Routes
+// ✅ --- ADDED THIS ROUTE ---
+// Add a "health check" route for the base URL to confirm the API is running
+app.get('/', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'MJD Backend API is running successfully.' });
+});
+
+// ✅ API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', auth, projectRoutes);
 app.use('/api/boq', auth, boqRoutes);

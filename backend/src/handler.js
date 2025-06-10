@@ -1,14 +1,7 @@
+// src/handler.js
 import serverless from 'serverless-http';
 import app from './app.js';
 
-export const handler = serverless(app, {
-  request: {
-    rawBody: false, // default is false, keep this
-    body: 'body',
-    headers: 'headers',
-    method: 'httpMethod',
-    path: 'path',
-    requestContext: 'requestContext',
-    query: 'queryStringParameters'
-  }
-});
+// Use the simplified, default export. 
+// It works perfectly with API Gateway Payload Format 2.0.
+export const handler = serverless(app);
