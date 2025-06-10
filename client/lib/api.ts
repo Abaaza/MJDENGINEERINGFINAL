@@ -83,14 +83,35 @@ export async function changePassword(currentPassword: string, newPassword: strin
 export interface PriceItem {
   _id?: string
   code?: string
+  ref?: string
   description: string
+  category?: string
+  subCategory?: string
   unit?: string
   rate?: number
+  keywords?: string[]
+  phrases?: string[]
 }
 
 export async function searchPriceItems(query: string): Promise<PriceItem[]> {
   const url = `${base}/api/prices/search?q=${encodeURIComponent(query)}`
   const res = await fetch(url)
   if (!res.ok) throw new Error('Search failed')
+  return res.json()
+}
+
+export async function getPriceItems(): Promise<PriceItem[]> {
+  const res = await fetch(`${base}/api/prices`)
+  if (!res.ok) throw new Error('Failed to fetch prices')
+  return res.json()
+}
+
+export async function updatePriceItem(id: string, updates: Partial<PriceItem>): Promise<PriceItem> {
+  const res = await fetch(`${base}/api/prices/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates),
+  })
+  if (!res.ok) throw new Error('Update failed')
   return res.json()
 }
