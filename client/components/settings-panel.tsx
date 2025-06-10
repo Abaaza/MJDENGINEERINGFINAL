@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { User, Bell, Shield, Palette, Save } from "lucide-react"
+import { User, Bell, Shield, Palette, Key, Save } from "lucide-react"
+import { useApiKeys } from "@/contexts/api-keys-context"
 
 export function SettingsPanel() {
   const [notifications, setNotifications] = useState({
@@ -16,6 +17,7 @@ export function SettingsPanel() {
     push: false,
     sms: true,
   })
+  const { openaiKey, cohereKey, geminiKey, setKeys } = useApiKeys()
 
   return (
     <div className="max-w-4xl">
@@ -48,6 +50,13 @@ export function SettingsPanel() {
           >
             <Palette className="h-4 w-4 mr-2" />
             Appearance
+          </TabsTrigger>
+          <TabsTrigger
+            value="apikeys"
+            className="data-[state=active]:bg-[#00D4FF]/20 data-[state=active]:text-[#00D4FF]"
+          >
+            <Key className="h-4 w-4 mr-2" />
+            API Keys
           </TabsTrigger>
         </TabsList>
 
@@ -222,6 +231,28 @@ export function SettingsPanel() {
                   <div className="w-8 h-8 rounded-full bg-[#00FF88] cursor-pointer border-2 border-transparent"></div>
                   <div className="w-8 h-8 rounded-full bg-[#FF6B35] cursor-pointer border-2 border-transparent"></div>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="apikeys" className="space-y-6">
+          <Card className="glass-effect border-white/10">
+            <CardHeader>
+              <CardTitle className="text-white">API Keys</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="openai" className="text-white">OpenAI Key</Label>
+                <Input id="openai" value={openaiKey} onChange={e=>setKeys({openaiKey:e.target.value})} className="bg-white/5 border-white/10" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cohere" className="text-white">Cohere Key</Label>
+                <Input id="cohere" value={cohereKey} onChange={e=>setKeys({cohereKey:e.target.value})} className="bg-white/5 border-white/10" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="gemini" className="text-white">Gemini Key</Label>
+                <Input id="gemini" value={geminiKey} onChange={e=>setKeys({geminiKey:e.target.value})} className="bg-white/5 border-white/10" />
               </div>
             </CardContent>
           </Card>

@@ -18,6 +18,7 @@ const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Quotations", href: "/quotations", icon: FileText },
   { name: "Upload", href: "/upload", icon: Upload },
+  { name: "Price Match", href: "/price-match", icon: FileText },
   { name: "Clients", href: "/clients", icon: Users },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Settings", href: "/settings", icon: Settings },

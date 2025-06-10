@@ -5,6 +5,8 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { MobileOptimizationProvider } from "@/components/mobile-optimization-provider"
+import { AuthProvider } from "@/contexts/auth-context"
+import { ApiKeyProvider } from "@/contexts/api-keys-context"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -51,8 +53,12 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           <MobileOptimizationProvider>
-            {children}
-            <Toaster />
+            <AuthProvider>
+              <ApiKeyProvider>
+                {children}
+                <Toaster />
+              </ApiKeyProvider>
+            </AuthProvider>
           </MobileOptimizationProvider>
         </ThemeProvider>
       </body>
