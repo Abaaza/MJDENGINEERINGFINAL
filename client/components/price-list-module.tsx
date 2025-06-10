@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { getPriceItems, searchPriceItems, updatePriceItem, PriceItem } from "@/lib/api"
+import { useAuth } from "@/contexts/auth-context"
 
 interface PriceItemExt extends PriceItem {
   category?: string
@@ -20,11 +21,13 @@ export function PriceListModule() {
   const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(false)
   const [editing, setEditing] = useState<Record<string, Partial<PriceItemExt>>>({})
+  const { token } = useAuth()
 
   const load = async (term: string) => {
     setLoading(true)
     try {
-      const data = term ? await searchPriceItems(term) : await getPriceItems()
+      if (!token) return
+      const data = term ? await searchPriceItems(term, token) : await getPriceItems(token)
       setItems(data as PriceItemExt[])
     } catch (err) {
       console.error(err)
@@ -35,7 +38,7 @@ export function PriceListModule() {
 
   useEffect(() => {
     load(search)
-  }, [search])
+  }, [search, token])
 
   const handleChange = (id: string, field: keyof PriceItemExt, value: any) => {
     setEditing(prev => ({
@@ -47,6 +50,7 @@ export function PriceListModule() {
   const handleSave = async (id: string) => {
     const upd = editing[id]
     if (!upd) return
+    if (!token) return
     const updates: any = { ...upd }
     if (typeof updates.keywords === "string") {
       updates.keywords = updates.keywords
@@ -61,7 +65,7 @@ export function PriceListModule() {
         .filter(Boolean)
     }
     try {
-      const updated = await updatePriceItem(id, updates)
+      const updated = await updatePriceItem(id, updates, token)
       setItems(itms => itms.map(it => (it._id === id ? (updated as PriceItemExt) : it)))
       setEditing(prev => {
         const { [id]: _, ...rest } = prev

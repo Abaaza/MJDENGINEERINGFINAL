@@ -9,8 +9,10 @@ export interface Project {
 
 const base = process.env.NEXT_PUBLIC_API_URL ?? ''
 
-export async function getProjects(): Promise<Project[]> {
-  const res = await fetch(`${base}/api/projects`)
+export async function getProjects(token: string): Promise<Project[]> {
+  const res = await fetch(`${base}/api/projects`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
   if (!res.ok) {
     throw new Error(`Failed to fetch projects: ${res.status}`)
   }
@@ -41,13 +43,17 @@ export async function registerUser(name: string, email: string, password: string
   return res.json()
 }
 
-export async function priceMatch(file: File, keys: {openaiKey?:string; cohereKey?:string; geminiKey?:string}) {
+export async function priceMatch(file: File, keys: {openaiKey?:string; cohereKey?:string; geminiKey?:string}, token: string) {
   const form = new FormData()
   form.append('file', file)
   if (keys.openaiKey) form.append('openaiKey', keys.openaiKey)
   if (keys.cohereKey) form.append('cohereKey', keys.cohereKey)
   if (keys.geminiKey) form.append('geminiKey', keys.geminiKey)
-  const res = await fetch(`${base}/api/match`, { method: 'POST', body: form })
+  const res = await fetch(`${base}/api/match`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  })
   if (!res.ok) {
     throw new Error('Price match failed')
   }
@@ -93,23 +99,23 @@ export interface PriceItem {
   phrases?: string[]
 }
 
-export async function searchPriceItems(query: string): Promise<PriceItem[]> {
+export async function searchPriceItems(query: string, token: string): Promise<PriceItem[]> {
   const url = `${base}/api/prices/search?q=${encodeURIComponent(query)}`
-  const res = await fetch(url)
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
   if (!res.ok) throw new Error('Search failed')
   return res.json()
 }
 
-export async function getPriceItems(): Promise<PriceItem[]> {
-  const res = await fetch(`${base}/api/prices`)
+export async function getPriceItems(token: string): Promise<PriceItem[]> {
+  const res = await fetch(`${base}/api/prices`, { headers: { Authorization: `Bearer ${token}` } })
   if (!res.ok) throw new Error('Failed to fetch prices')
   return res.json()
 }
 
-export async function updatePriceItem(id: string, updates: Partial<PriceItem>): Promise<PriceItem> {
+export async function updatePriceItem(id: string, updates: Partial<PriceItem>, token: string): Promise<PriceItem> {
   const res = await fetch(`${base}/api/prices/${id}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify(updates),
   })
   if (!res.ok) throw new Error('Update failed')
