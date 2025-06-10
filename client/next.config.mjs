@@ -1,7 +1,7 @@
 const nextConfig = {
-  // output: 'standalone',  ← remove or comment out
+  output: 'standalone',          // <- keep this for SSR
+  images: { unoptimized: true },
   eslint: { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: true },
-  images: { unoptimized: true },
 };
 export default nextConfig;

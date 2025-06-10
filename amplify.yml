@@ -1,23 +1,26 @@
+# amplify-ssr.yml  ── Next.js 15 with SSR / API routes
 version: 1
 
 applications:
-  - appRoot: client          # 👈 tells Amplify “my real project lives here”
+  - appRoot: client # the folder that has package.json & next.config.js
 
     frontend:
       phases:
         preBuild:
           commands:
-            - npm install -g pnpm
-            - pnpm install
+            - npm install -g pnpm # use any package manager you like
+            - pnpm install --frozen-lockfile
         build:
           commands:
-            - pnpm run build      # runs `next build` inside client/
+            - pnpm run build # runs `next build` (stand-alone bundle)
 
+      # 👇 Amplify needs to know where the Next.js build artifacts live
       artifacts:
-        baseDirectory: .next      # path is **relative to client/** thanks to appRoot
+        baseDirectory: .next
         files:
-          - '**/*'
+          - "**/*"
 
       cache:
         paths:
-          - node_modules/**/*     # caches client/node_modules
+          - node_modules/**/*
+          - ~/.cache/pnpm/store/**/*
