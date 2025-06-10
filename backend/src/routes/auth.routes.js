@@ -29,10 +29,10 @@ function safeParseBody(req) {
 router.post('/register', async (req, res) => {
   try {
     const body = safeParseBody(req);
-    const { name, email, password } = body;
+    const { name, email, password, guests } = body;
 
-    if (!name || !email || !password) {
-      console.warn('[Register] Missing fields', { name, email, password });
+    if (!name || !email || !password || guests === undefined) {
+      console.warn('[Register] Missing fields', { name, email, password, guests });
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
@@ -43,11 +43,11 @@ router.post('/register', async (req, res) => {
         return res.status(400).json({ message: 'Email already in use' });
       }
 
-      const user = await User.create({ name, email, password });
-      const token = signToken({ id: user._id, name: user.name });
+      const user = await User.create({ name, email, password, guests });
+      const token = signToken({ id: user._id, name: user.name, guests: user.guests });
 
       console.log('[Register] MongoDB user created:', user._id);
-      return res.json({ token, user: { id: user._id, name: user.name } });
+      return res.json({ token, user: { id: user._id, name: user.name, guests: user.guests } });
     }
 
     if (sampleUsers.find(u => u.email === email)) {
@@ -56,12 +56,12 @@ router.post('/register', async (req, res) => {
     }
 
     const hash = await bcrypt.hash(password, 10);
-    const user = { id: nanoid(), name, email, password: hash };
+    const user = { id: nanoid(), name, email, password: hash, guests };
     sampleUsers.push(user);
-    const token = signToken({ id: user.id, name: user.name });
+    const token = signToken({ id: user.id, name: user.name, guests });
 
     console.log('[Register] Sample user added:', user.id);
-    return res.json({ token, user: { id: user.id, name: user.name } });
+    return res.json({ token, user: { id: user.id, name: user.name, guests } });
 
   } catch (err) {
     console.error('[Register] Error:', err);
@@ -99,10 +99,10 @@ router.post('/login', async (req, res) => {
     }
 
     const id = user._id || user.id;
-    const token = signToken({ id, name: user.name });
+    const token = signToken({ id, name: user.name, guests: user.guests });
 
     console.log('[Login] Success:', id);
-    return res.json({ token, user: { id, name: user.name } });
+    return res.json({ token, user: { id, name: user.name, guests: user.guests } });
 
   } catch (err) {
     console.error('[Login] Error:', err);
