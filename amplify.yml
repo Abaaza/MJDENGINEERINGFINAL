@@ -3,20 +3,16 @@ frontend:
   phases:
     preBuild:
       commands:
-        # Install pnpm globally in the build environment
+        # Install pnpm, which your project needs
         - npm install -g pnpm
-        # Navigate into the client folder
+        # Go into the client directory
         - cd client
-        # Use pnpm to install dependencies
+        # Install dependencies with pnpm
         - pnpm install
     build:
       commands:
-        # The build command is the same, but it will now run in an environment where pnpm exists
-        - npm run build
-  artifacts:
-    baseDirectory: client/.next
-    files:
-      - "**/*"
+        # IMPORTANT: Use pnpm to run the build script
+        - pnpm run build
   cache:
     paths:
       - client/node_modules/**/*
