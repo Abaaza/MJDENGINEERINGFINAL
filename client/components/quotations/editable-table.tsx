@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, memo } from "react"
+import { useState, useEffect, memo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -9,6 +9,8 @@ import { Edit, Save, X, Plus } from "lucide-react"
 
 interface EditableTableProps {
   isEditing: boolean
+  initialItems?: TableItem[]
+  onItemsChange?: (items: TableItem[]) => void
 }
 
 interface TableItem {
@@ -28,9 +30,14 @@ const mockItems: TableItem[] = [
   { id: 5, description: "Interior Finishing", quantity: 2500, unit: "m²", unitPrice: 150, total: 375000 },
 ]
 
-export const EditableTable = memo(function EditableTable({ isEditing }: EditableTableProps) {
-  const [items, setItems] = useState<TableItem[]>(mockItems)
+export const EditableTable = memo(function EditableTable({ isEditing, initialItems, onItemsChange }: EditableTableProps) {
+  const [items, setItems] = useState<TableItem[]>(initialItems ?? mockItems)
   const [editingRow, setEditingRow] = useState<number | null>(null)
+
+  // notify parent when items change
+  useEffect(() => {
+    onItemsChange?.(items)
+  }, [items, onItemsChange])
 
   const handleEdit = (id: number) => {
     setEditingRow(id)
@@ -38,12 +45,12 @@ export const EditableTable = memo(function EditableTable({ isEditing }: Editable
 
   const handleSave = (id: number) => {
     setEditingRow(null)
-    // Save logic here
+    onItemsChange?.(items)
   }
 
   const handleCancel = () => {
     setEditingRow(null)
-    // Reset changes logic here
+    onItemsChange?.(items)
   }
 
   const addNewRow = () => {
@@ -57,6 +64,7 @@ export const EditableTable = memo(function EditableTable({ isEditing }: Editable
     }
     setItems([...items, newItem])
     setEditingRow(newItem.id)
+    onItemsChange?.([...items, newItem])
   }
 
   return (
