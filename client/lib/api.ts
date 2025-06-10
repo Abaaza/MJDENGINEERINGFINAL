@@ -55,7 +55,12 @@ export async function priceMatch(file: File, keys: {openaiKey?:string; cohereKey
     body: form,
   })
   if (!res.ok) {
-    throw new Error('Price match failed')
+    let message = 'Price match failed'
+    try {
+      const data = await res.json()
+      if (data && data.message) message = data.message
+    } catch {}
+    throw new Error(message)
   }
   return res.json()
 }
