@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,6 +10,7 @@ import { saveQuotation } from "@/lib/quotation-store"
 import { formatCurrency } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { useApiKeys } from "@/contexts/api-keys-context"
+import { useAuth } from "@/contexts/auth-context"
 import { SearchInput } from "@/components/ui/search-input"
 
 interface MatchResult {
@@ -26,10 +27,13 @@ interface Row extends MatchResult {
 
 export function PriceMatchModule() {
   const { openaiKey, cohereKey, geminiKey } = useApiKeys()
+  const { token } = useAuth()
   const router = useRouter()
   const [file, setFile] = useState<File | null>(null)
   const [results, setResults] = useState<Row[] | null>(null)
   const [loading, setLoading] = useState(false)
+  const [logs, setLogs] = useState<string[]>([])
+  const logSrc = useRef<EventSource | null>(null)
   const [discountInput, setDiscountInput] = useState(0)
   const [discount, setDiscount] = useState(0)
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -40,9 +44,22 @@ export function PriceMatchModule() {
 
   const runMatch = async () => {
     if (!file) return
+    if (!token) return
     setLoading(true)
+    setLogs([])
+    const base = process.env.NEXT_PUBLIC_API_URL ?? ''
+    const src = new EventSource(`${base}/api/match/logs`)
+    logSrc.current = src
+    src.onmessage = (e) => {
+      if (e.data === 'DONE') {
+        src.close()
+        logSrc.current = null
+      } else {
+        setLogs((prev) => [...prev, e.data])
+      }
+    }
     try {
-      const data = await priceMatch(file, { openaiKey, cohereKey, geminiKey })
+      const data = await priceMatch(file, { openaiKey, cohereKey, geminiKey }, token)
       const rows: Row[] = data.map((r: MatchResult) => ({
         ...r,
         selected: r.matches.length ? 0 : 'manual',
@@ -53,6 +70,10 @@ export function PriceMatchModule() {
       console.error(err)
     } finally {
       setLoading(false)
+      if (logSrc.current) {
+        logSrc.current.close()
+        logSrc.current = null
+      }
     }
   }
 
@@ -71,7 +92,8 @@ export function PriceMatchModule() {
       return
     }
     try {
-      const items = await searchPriceItems(q)
+      if (!token) return
+      const items = await searchPriceItems(q, token)
       updateRow(index, r => ({ ...r, searchResults: items }))
     } catch (err) {
       console.error(err)
@@ -139,10 +161,20 @@ export function PriceMatchModule() {
         <CardTitle className="text-white">Price Match</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Input type="file" accept=".xlsx,.xls" onChange={handleFile} />
+        <Input
+          type="file"
+          accept=".xlsx,.xls"
+          onChange={handleFile}
+          className="bg-gray-800/20 border-white/10 file:bg-gray-700 file:text-white"
+        />
         <Button onClick={runMatch} disabled={!file || loading} className="bg-gradient-to-r from-[#00D4FF] to-[#00FF88] text-black font-semibold">
           {loading ? "Matching..." : "Start Matching"}
         </Button>
+        {(loading || logs.length > 0) && (
+          <pre className="bg-black/30 text-green-400 p-2 rounded max-h-40 overflow-auto text-xs whitespace-pre-wrap">
+            {logs.join("\n")}
+          </pre>
+        )}
         {results && (
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
+import { EventEmitter } from 'events';
 import { openAiMatchFromFiles } from '../services/openAiService.js';
 import { cohereMatchFromFiles } from '../services/cohereService.js';
 import { matchFromFiles } from '../services/matchService.js';
@@ -9,6 +10,21 @@ import { fileURLToPath } from 'url';
 
 const upload = multer({ storage: multer.memoryStorage() });
 const router = Router();
+export const matchEmitter = new EventEmitter();
+
+router.get('/logs', (req, res) => {
+  res.set({
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive'
+  });
+  res.flushHeaders();
+  const send = (msg) => res.write(`data: ${msg}\n\n`);
+  matchEmitter.on('log', send);
+  req.on('close', () => {
+    matchEmitter.off('log', send);
+  });
+});
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Resolve to the repo root's frontend price list file
@@ -18,6 +34,11 @@ const PRICE_FILE = path.resolve(__dirname, '../../MJD-PRICELIST.xlsx');
 
 router.post('/', upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+  const origLog = console.log;
+  console.log = (...args) => {
+    origLog(...args);
+    matchEmitter.emit('log', args.join(' '));
+  };
   console.log('Price match upload:', {
     name: req.file.originalname,
     size: req.file.size
@@ -61,10 +82,13 @@ router.post('/', upload.single('file'), async (req, res) => {
       results = matchFromFiles(PRICE_FILE, req.file.buffer);
     }
     console.log('Price match results:', results.length);
+    matchEmitter.emit('log', 'DONE');
     res.json(results);
   } catch (err) {
     console.error('Price match error:', err);
     res.status(400).json({ message: err.message });
+  } finally {
+    console.log = origLog;
   }
 });
 
