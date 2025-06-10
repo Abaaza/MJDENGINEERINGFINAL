@@ -1,7 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useState, useEffect } from "react"
-import { loginUser, registerUser } from "@/lib/api"
+import { loginUser, registerUser, updateProfile, changePassword } from "@/lib/api"
 
 interface User {
   id: string
@@ -13,6 +13,8 @@ interface AuthContextType {
   token: string | null
   login: (email: string, password: string) => Promise<void>
   register: (name: string, email: string, password: string) => Promise<void>
+  updateName: (name: string) => Promise<void>
+  changePassword: (current: string, password: string) => Promise<void>
   logout: () => void
 }
 
@@ -21,6 +23,8 @@ const AuthContext = createContext<AuthContextType>({
   token: null,
   login: async () => {},
   register: async () => {},
+  updateName: async () => {},
+  changePassword: async () => {},
   logout: () => {}
 })
 
@@ -51,6 +55,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("auth", JSON.stringify(res))
   }
 
+  const updateName = async (name: string) => {
+    if (!token) return
+    const res = await updateProfile(name, token)
+    setUser(res.user)
+    setToken(res.token)
+    localStorage.setItem("auth", JSON.stringify(res))
+  }
+
+  const changePasswordFn = async (current: string, password: string) => {
+    if (!token) return
+    await changePassword(current, password, token)
+  }
+
   const logout = () => {
     setUser(null)
     setToken(null)
@@ -58,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, login, register, updateName, changePassword: changePasswordFn, logout }}>
       {children}
     </AuthContext.Provider>
   )

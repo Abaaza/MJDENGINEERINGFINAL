@@ -53,3 +53,29 @@ export async function priceMatch(file: File, keys: {openaiKey?:string; cohereKey
   }
   return res.json()
 }
+
+export async function updateProfile(name: string, token: string) {
+  const res = await fetch(`${base}/api/auth/profile`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ name }),
+  })
+  if (!res.ok) throw new Error('Update failed')
+  return res.json()
+}
+
+export async function changePassword(currentPassword: string, newPassword: string, token: string) {
+  const res = await fetch(`${base}/api/auth/password`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ currentPassword, newPassword }),
+  })
+  if (!res.ok) throw new Error('Password update failed')
+  return res.json()
+}
