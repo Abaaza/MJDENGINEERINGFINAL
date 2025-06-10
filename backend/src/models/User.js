@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema(
     name:     { type: String, required: true },
     email:    { type: String, required: true, unique: true, index: true },
     password: { type: String, required: true },
+    guests:  { type: Number, required: true },
     /** NEW — set to true once an admin approves the account */
     authorized: { type: Boolean, default: false },
   },

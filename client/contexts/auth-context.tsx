@@ -6,13 +6,14 @@ import { loginUser, registerUser, updateProfile, changePassword } from "@/lib/ap
 interface User {
   id: string
   name: string
+  guests: number
 }
 
 interface AuthContextType {
   user: User | null
   token: string | null
   login: (email: string, password: string) => Promise<void>
-  register: (name: string, email: string, password: string) => Promise<void>
+  register: (name: string, email: string, password: string, guests: number) => Promise<void>
   updateName: (name: string) => Promise<void>
   changePassword: (current: string, password: string) => Promise<void>
   logout: () => void
@@ -48,8 +49,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("auth", JSON.stringify(res))
   }
 
-  const register = async (name: string, email: string, password: string) => {
-    const res = await registerUser(name, email, password)
+  const register = async (name: string, email: string, password: string, guests: number) => {
+    const res = await registerUser(name, email, password, guests)
     setUser(res.user)
     setToken(res.token)
     localStorage.setItem("auth", JSON.stringify(res))

@@ -18,7 +18,7 @@ export function SettingsPanel() {
     push: false,
     sms: true,
   })
-  const { openaiKey, cohereKey, geminiKey, setKeys } = useApiKeys()
+  const { openaiKey, cohereKey, geminiKey, setKeys, saveKeys } = useApiKeys()
   const { user, updateName, changePassword } = useAuth()
   const [name, setName] = useState(user?.name ?? '')
   const [currentPassword, setCurrentPassword] = useState('')
@@ -245,6 +245,10 @@ export function SettingsPanel() {
                 <Label htmlFor="gemini" className="text-white">Gemini Key</Label>
                 <Input id="gemini" value={geminiKey} onChange={e=>setKeys({geminiKey:e.target.value})} className="bg-white/5 border-white/10" />
               </div>
+              <Button onClick={saveKeys} className="bg-gradient-to-r from-[#00D4FF] to-[#00FF88] hover:from-[#00D4FF]/80 hover:to-[#00FF88]/80 text-black font-semibold ripple">
+                <Save className="h-4 w-4 mr-2" />
+                Save Keys
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
