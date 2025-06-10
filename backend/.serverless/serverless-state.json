@@ -19,6 +19,10 @@
         "STAGE": "prod",
         "NODE_OPTIONS": "--enable-source-maps"
       },
+      "httpApi": {
+        "cors": true,
+        "payload": "2.0"
+      },
       "versionFunctions": true,
       "compiledCloudFormationTemplate": {
         "AWSTemplateFormatVersion": "2010-09-09",
@@ -184,7 +188,7 @@
                 "S3Bucket": {
                   "Ref": "ServerlessDeploymentBucket"
                 },
-                "S3Key": "serverless/mjd-backend/prod/1749410234879-2025-06-08T19:17:14.879Z/api.zip"
+                "S3Key": "serverless/mjd-backend/prod/1749580280249-2025-06-10T18:31:20.249Z/api.zip"
               },
               "Handler": "src/handler.handler",
               "Runtime": "nodejs20.x",
@@ -214,21 +218,44 @@
               "ApiLogGroup"
             ]
           },
-          "ApiLambdaVersionYmflq9H8Tzv4PI1FiML3jl9NaxEd2uiTSNJ4sb9no": {
+          "ApiLambdaVersionSyc3SLEJnxScvCInStBIY88WXrKSGH4zYpjbzpqVw": {
             "Type": "AWS::Lambda::Version",
             "DeletionPolicy": "Retain",
             "Properties": {
               "FunctionName": {
                 "Ref": "ApiLambdaFunction"
               },
-              "CodeSha256": "a4l2gRxeWeMQ1zB4003vSwW8gEislxxRHXJJmLvxA7I="
+              "CodeSha256": "FHH2hWKfMX7Dcpt4v4hofx5wHysD/aXKA3Oz5KvvECU="
             }
           },
           "HttpApi": {
             "Type": "AWS::ApiGatewayV2::Api",
             "Properties": {
               "Name": "prod-mjd-backend",
-              "ProtocolType": "HTTP"
+              "ProtocolType": "HTTP",
+              "CorsConfiguration": {
+                "AllowHeaders": [
+                  "Content-Type",
+                  "X-Amz-Date",
+                  "Authorization",
+                  "X-Api-Key",
+                  "X-Amz-Security-Token",
+                  "X-Amz-User-Agent",
+                  "X-Amzn-Trace-Id"
+                ],
+                "AllowMethods": [
+                  "OPTIONS",
+                  "GET",
+                  "POST",
+                  "PUT",
+                  "PATCH",
+                  "HEAD",
+                  "DELETE"
+                ],
+                "AllowOrigins": [
+                  "*"
+                ]
+              }
             }
           },
           "HttpApiStage": {
@@ -329,7 +356,7 @@
           "ApiLambdaFunctionQualifiedArn": {
             "Description": "Current Lambda function version",
             "Value": {
-              "Ref": "ApiLambdaVersionYmflq9H8Tzv4PI1FiML3jl9NaxEd2uiTSNJ4sb9no"
+              "Ref": "ApiLambdaVersionSyc3SLEJnxScvCInStBIY88WXrKSGH4zYpjbzpqVw"
             },
             "Export": {
               "Name": "sls-mjd-backend-prod-ApiLambdaFunctionQualifiedArn"
@@ -474,13 +501,13 @@
         ],
         "name": "mjd-backend-prod-api",
         "package": {
-          "artifact": "C:\\Users\\abaza\\tender-dashboard\\backend\\.serverless\\api.zip"
+          "artifact": "C:\\Users\\abaza\\Downloads\\MJDENGINEERINGFINAL\\backend\\.serverless\\api.zip"
         },
         "memory": 1024,
         "timeout": 6,
         "runtime": "nodejs20.x",
         "vpc": {},
-        "versionLogicalId": "ApiLambdaVersionYmflq9H8Tzv4PI1FiML3jl9NaxEd2uiTSNJ4sb9no"
+        "versionLogicalId": "ApiLambdaVersionSyc3SLEJnxScvCInStBIY88WXrKSGH4zYpjbzpqVw"
       }
     },
     "configValidationMode": "warn",
@@ -490,10 +517,6 @@
       "frameworkVersion": "3",
       "provider": {
         "$ref": "$[\"service\"][\"provider\"]"
-      },
-      "httpApi": {
-        "cors": true,
-        "payload": "2.0"
       },
       "functions": {
         "$ref": "$[\"service\"][\"functions\"]"
@@ -509,7 +532,7 @@
           "!tests/**"
         ],
         "artifactsS3KeyDirname": "serverless/mjd-backend/prod/code-artifacts",
-        "artifactDirectoryName": "serverless/mjd-backend/prod/1749410234879-2025-06-08T19:17:14.879Z"
+        "artifactDirectoryName": "serverless/mjd-backend/prod/1749580280249-2025-06-10T18:31:20.249Z"
       }
     },
     "layers": {},
@@ -517,7 +540,7 @@
   },
   "package": {
     "individually": true,
-    "artifactDirectoryName": "serverless/mjd-backend/prod/1749410234879-2025-06-08T19:17:14.879Z",
+    "artifactDirectoryName": "serverless/mjd-backend/prod/1749580280249-2025-06-10T18:31:20.249Z",
     "artifact": ""
   }
 }

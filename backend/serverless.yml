@@ -1,11 +1,13 @@
-service: mjd-backend # no $ in the name
+# serverless.yml
+
+service: mjd-backend
 frameworkVersion: "3"
 
 provider:
   name: aws
   runtime: nodejs20.x
   region: me-south-1
-  stage: ${opt:stage, 'prod'} # <-- legal default
+  stage: ${opt:stage, 'prod'}
   environment:
     CONNECTION_STRING: ${env:CONNECTION_STRING, ''}
     JWT_SECRET: ${env:JWT_SECRET, ''}
@@ -16,10 +18,11 @@ provider:
     STAGE: ${self:provider.stage}
     NODE_OPTIONS: "--enable-source-maps"
 
-# HTTP-API config (top-level; leave out "stage")
-httpApi:
-  cors: true # wildcard CORS is fine while debugging
-  payload: "2.0"
+  # --- MOVED HERE ---
+  # Global HTTP API configuration belongs inside the provider block
+  httpApi:
+    cors: true # wildcard CORS is fine while debugging
+    payload: "2.0"
 
 functions:
   api:
