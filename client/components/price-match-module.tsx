@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, memo } from "react"
+import { useState, useRef, memo, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -25,7 +25,11 @@ interface Row extends MatchResult {
   rateOverride?: number
 }
 
-export function PriceMatchModule() {
+interface PriceMatchModuleProps {
+  onMatched?: () => void
+}
+
+export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
   const { openaiKey, cohereKey, geminiKey } = useApiKeys()
   const { token } = useAuth()
   const router = useRouter()
@@ -36,12 +40,25 @@ export function PriceMatchModule() {
   const logSrc = useRef<EventSource | null>(null)
   const [discountInput, setDiscountInput] = useState(0)
   const [discount, setDiscount] = useState(0)
-  const [visibleCount, setVisibleCount] = useState(50)
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const rowHeight = 40
+  const [scrollTop, setScrollTop] = useState(0)
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0])
     }
   }
+
+  const onScroll = () => {
+    if (containerRef.current) {
+      setScrollTop(containerRef.current.scrollTop)
+    }
+  }
+
+  const containerHeight = 384
+  const visibleCount = Math.ceil(containerHeight / rowHeight) + 2
+  const startIndex = results ? Math.max(0, Math.floor(scrollTop / rowHeight) - 1) : 0
+  const endIndex = results ? Math.min(results.length, startIndex + visibleCount) : 0
 
   const runMatch = async () => {
     if (!file) return
@@ -66,8 +83,8 @@ export function PriceMatchModule() {
         selected: r.matches.length ? 0 : 'manual',
         searchResults: []
       }))
-      setVisibleCount(50)
       setResults(rows)
+      onMatched?.()
     } catch (err) {
       console.error(err)
     } finally {
@@ -121,18 +138,13 @@ export function PriceMatchModule() {
     })
   }
 
-  const showMore = () => {
-    if (results) {
-      setVisibleCount(v => Math.min(v + 50, results.length))
-    }
-  }
 
   const PriceMatchRow = memo(function PriceMatchRow({ row, index }: { row: Row; index: number }) {
     const sel = typeof row.selected === 'number' ? row.matches[row.selected] : null
     const rate = row.rateOverride ?? sel?.unitRate ?? 0
     const total = rate * row.quantity * (1 - discount / 100)
     return (
-      <tr className="text-gray-300 border-t border-white/10 align-top">
+      <tr className="text-gray-300 border-t border-white/10 align-top" style={{ height: rowHeight }}>
         <td className="px-2 py-1 w-48">{row.inputDescription}</td>
         <td className="px-2 py-1">
           <RadioGroup
@@ -273,8 +285,8 @@ export function PriceMatchModule() {
           </div>
         )}
         {results && (
-          <div className="overflow-auto max-h-96">
-            <table className="w-full text-sm text-left mt-4">
+          <div className="overflow-auto max-h-96" ref={containerRef} onScroll={onScroll}>
+            <table className="w-full text-sm text-left mt-4" style={{ height: results.length * rowHeight, position: 'relative' }}>
               <thead>
                 <tr className="text-white">
                   <th className="px-2 py-1">Description</th>
@@ -286,19 +298,10 @@ export function PriceMatchModule() {
                   <th className="px-2 py-1">Total</th>
                 </tr>
               </thead>
-              <tbody>
-                {results.slice(0, visibleCount).map((r, idx) => (
-                  <PriceMatchRow key={idx} row={r} index={idx} />
+              <tbody style={{ transform: `translateY(${Math.floor(scrollTop / rowHeight) * rowHeight}px)` }}>
+                {results.slice(startIndex, endIndex).map((r, idx) => (
+                  <PriceMatchRow key={startIndex + idx} row={r} index={startIndex + idx} />
                 ))}
-                {results.length > visibleCount && (
-                  <tr>
-                    <td colSpan={7} className="p-2 text-center">
-                      <Button size="sm" onClick={showMore} className="bg-[#00D4FF]/20 hover:bg-[#00D4FF]/30 text-[#00D4FF] border-[#00D4FF]/30 ripple">
-                        Show More
-                      </Button>
-                    </td>
-                  </tr>
-                )}
               </tbody>
               <tfoot>
                 <tr className="border-t border-white/10 text-white">
