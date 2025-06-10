@@ -22,9 +22,7 @@ async function connect() {
 
   if (!cached.promise) {
     cached.promise = mongoose.connect(process.env.CONNECTION_STRING, {
-      bufferCommands: false,
-      useNewUrlParser: true,
-      useUnifiedTopology: true
+      bufferCommands: false
     });
   }
 
