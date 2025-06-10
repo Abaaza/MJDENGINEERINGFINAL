@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -22,6 +22,7 @@ interface UploadedFile {
 export function UploadModule() {
   const [files, setFiles] = useState<UploadedFile[]>([])
   const [isDragging, setIsDragging] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
   const { toast } = useToast()
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -177,18 +178,20 @@ export function UploadModule() {
           <h3 className="text-lg font-semibold text-white mb-2">Drop Excel files here</h3>
           <p className="text-gray-400 mb-4">or click to browse your files</p>
           <input
+            ref={fileInputRef}
             type="file"
             multiple
             accept=".xlsx,.xls"
             onChange={handleFileInput}
             className="hidden"
-            id="file-upload"
           />
-          <label htmlFor="file-upload">
-            <Button className="bg-gradient-to-r from-[#00D4FF] to-[#00FF88] hover:from-[#00D4FF]/80 hover:to-[#00FF88]/80 text-black font-semibold ripple cursor-pointer">
-              Browse Files
-            </Button>
-          </label>
+          <Button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="bg-gradient-to-r from-[#00D4FF] to-[#00FF88] hover:from-[#00D4FF]/80 hover:to-[#00FF88]/80 text-black font-semibold ripple cursor-pointer"
+          >
+            Browse Files
+          </Button>
         </div>
 
         {/* File List */}
