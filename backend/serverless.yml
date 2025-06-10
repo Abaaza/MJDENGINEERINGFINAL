@@ -1,0 +1,40 @@
+service: mjd-backend # no $ in the name
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: me-south-1
+  stage: ${opt:stage, 'prod'} # <-- legal default
+  environment:
+    CONNECTION_STRING: ${env:CONNECTION_STRING, ''}
+    JWT_SECRET: ${env:JWT_SECRET, ''}
+    JWT_REFRESH_SECRET: ${env:JWT_REFRESH_SECRET, ''}
+    RATE_FILE: ${env:RATE_FILE, 'backend/MJD-PRICELIST.xlsx'}
+    EMAIL_USER: ${env:EMAIL_USER, ''}
+    EMAIL_PASS: ${env:EMAIL_PASS, ''}
+    STAGE: ${self:provider.stage}
+    NODE_OPTIONS: "--enable-source-maps"
+
+# HTTP-API config (top-level; leave out "stage")
+httpApi:
+  cors: true # wildcard CORS is fine while debugging
+  payload: "2.0"
+
+functions:
+  api:
+    handler: src/handler.handler
+    events:
+      - httpApi:
+          path: /{proxy+}
+          method: ANY
+
+plugins:
+  - serverless-dotenv-plugin
+
+package:
+  individually: true
+  patterns:
+    - "src/**"
+    - "backend/MJD-PRICELIST.xlsx"
+    - "!tests/**"
