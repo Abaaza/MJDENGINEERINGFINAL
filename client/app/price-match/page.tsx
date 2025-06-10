@@ -1,3 +1,5 @@
+"use client"
+
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { PriceMatchModule } from "@/components/price-match-module"
 import { useState } from "react"
