@@ -37,6 +37,7 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
   const [results, setResults] = useState<Row[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [logs, setLogs] = useState<string[]>([])
+  const [error, setError] = useState<string | null>(null)
   const logSrc = useRef<EventSource | null>(null)
   const [discountInput, setDiscountInput] = useState(0)
   const [discount, setDiscount] = useState(0)
@@ -65,6 +66,7 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
     if (!token) return
     setLoading(true)
     setLogs([])
+    setError(null)
     const base = process.env.NEXT_PUBLIC_API_URL ?? ''
     const src = new EventSource(`${base}/api/match/logs`)
     logSrc.current = src
@@ -87,6 +89,7 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
       onMatched?.()
     } catch (err) {
       console.error(err)
+      setError(err instanceof Error ? err.message : String(err))
     } finally {
       setLoading(false)
       if (logSrc.current) {
@@ -260,6 +263,9 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
           <pre className="bg-black/30 text-green-400 p-2 rounded max-h-40 overflow-auto text-xs whitespace-pre-wrap">
             {logs.join("\n")}
           </pre>
+        )}
+        {error && (
+          <p className="text-red-400 whitespace-pre-wrap">{error}</p>
         )}
         {results && (
           <div className="flex items-center space-x-4">
