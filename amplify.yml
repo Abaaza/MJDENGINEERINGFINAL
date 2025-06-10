@@ -9,7 +9,7 @@ frontend:
       commands:
         - npm run build # NO cd here!
   artifacts:
-    baseDirectory: client/dist # or client/build, depending on your config
+    baseDirectory: client/.next
     files:
       - "**/*"
   cache:
