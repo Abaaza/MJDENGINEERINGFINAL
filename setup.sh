@@ -26,7 +26,7 @@ install_dependencies() {
   (cd backend && npm install)
 
   echo "Installing frontend dependencies..."
-  (cd frontend && npm install)
+  (cd client && npm install)
 }
 
 check_internet
