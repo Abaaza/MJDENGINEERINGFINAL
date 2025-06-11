@@ -1,7 +1,30 @@
-import { loadPriceList, parseInputBuffer } from './matchService.js';
+import {
+  loadPriceList,
+  parseInputBuffer,
+  preprocess
+} from './matchService.js';
+import PriceItem from '../models/PriceItem.js';
 
 const EMBEDDING_MODEL = process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-large';
 const BATCH_SIZE = 100;
+
+async function loadPriceItemsFromDb() {
+  const docs = await PriceItem.find({
+    rate: { $ne: null },
+    unit: { $exists: true, $ne: '' }
+  }).lean();
+  return docs.map(d => ({
+    code: d.code || '',
+    description: d.description,
+    unit: d.unit || '',
+    rate: d.rate,
+    descClean: preprocess(d.description)
+  }));
+}
+
+function buildTexts(items) {
+  return items.map(p => p.descClean);
+}
 
 function dot(a, b) {
   let sum = 0;
@@ -47,14 +70,9 @@ async function fetchEmbeddings(apiKey, texts) {
   return out;
 }
 
-export async function openAiMatchFromFiles(priceFile, inputBuffer, apiKey) {
-  console.log('OpenAI matcher loading files');
-  const priceItems = loadPriceList(priceFile);
-  const inputItems = parseInputBuffer(inputBuffer);
-  console.log('Price items:', priceItems.length, 'Input items:', inputItems.length);
-
-  const priceTexts = priceItems.map((p) => p.descClean);
-  const inputTexts = inputItems.map((i) => i.descClean);
+async function openAiMatch(priceItems, inputItems, apiKey) {
+  const priceTexts = buildTexts(priceItems);
+  const inputTexts = buildTexts(inputItems);
 
   console.log('Fetching embeddings for price list');
   const priceEmbeds = await fetchEmbeddings(apiKey, priceTexts);
@@ -94,4 +112,20 @@ export async function openAiMatchFromFiles(priceFile, inputBuffer, apiKey) {
   });
   console.log('OpenAI matcher done');
   return results;
+}
+
+export async function openAiMatchFromFiles(priceFile, inputBuffer, apiKey) {
+  console.log('OpenAI matcher loading files');
+  const priceItems = loadPriceList(priceFile);
+  const inputItems = parseInputBuffer(inputBuffer);
+  console.log('Price items:', priceItems.length, 'Input items:', inputItems.length);
+  return openAiMatch(priceItems, inputItems, apiKey);
+}
+
+export async function openAiMatchFromDb(inputBuffer, apiKey) {
+  console.log('OpenAI matcher loading from DB');
+  const priceItems = await loadPriceItemsFromDb();
+  const inputItems = parseInputBuffer(inputBuffer);
+  console.log('Price items:', priceItems.length, 'Input items:', inputItems.length);
+  return openAiMatch(priceItems, inputItems, apiKey);
 }

@@ -1,8 +1,31 @@
-import { loadPriceList, parseInputBuffer } from './matchService.js';
+import {
+  loadPriceList,
+  parseInputBuffer,
+  preprocess
+} from './matchService.js';
+import PriceItem from '../models/PriceItem.js';
 
 const EMBEDDING_MODEL = process.env.COHERE_EMBEDDING_MODEL || 'embed-english-v3.0';
 const BATCH_SIZE = 96;
 const API_URL = 'https://api.cohere.ai/v1/embed';
+
+async function loadPriceItemsFromDb() {
+  const docs = await PriceItem.find({
+    rate: { $ne: null },
+    unit: { $exists: true, $ne: '' }
+  }).lean();
+  return docs.map(d => ({
+    code: d.code || '',
+    description: d.description,
+    unit: d.unit || '',
+    rate: d.rate,
+    descClean: preprocess(d.description)
+  }));
+}
+
+function buildTexts(items) {
+  return items.map(p => p.descClean);
+}
 
 function dot(a, b) {
   let sum = 0;
@@ -57,9 +80,12 @@ export async function cohereMatchFromFiles(priceFile, inputBuffer, apiKey) {
   const priceItems = loadPriceList(priceFile);
   const inputItems = parseInputBuffer(inputBuffer);
   console.log('Price items:', priceItems.length, 'Input items:', inputItems.length);
+  return cohereMatch(priceItems, inputItems, apiKey);
+}
 
-  const priceTexts = priceItems.map(p => p.descClean);
-  const inputTexts = inputItems.map(i => i.descClean);
+async function cohereMatch(priceItems, inputItems, apiKey) {
+  const priceTexts = buildTexts(priceItems);
+  const inputTexts = buildTexts(inputItems);
 
   console.log('Fetching embeddings for price list');
   const priceEmbeds = await fetchEmbeddings(
@@ -107,4 +133,12 @@ export async function cohereMatchFromFiles(priceFile, inputBuffer, apiKey) {
   });
   console.log('Cohere matcher done');
   return results;
+}
+
+export async function cohereMatchFromDb(inputBuffer, apiKey) {
+  console.log('Cohere matcher loading from DB');
+  const priceItems = await loadPriceItemsFromDb();
+  const inputItems = parseInputBuffer(inputBuffer);
+  console.log('Price items:', priceItems.length, 'Input items:', inputItems.length);
+  return cohereMatch(priceItems, inputItems, apiKey);
 }

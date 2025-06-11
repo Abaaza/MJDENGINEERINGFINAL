@@ -48,7 +48,7 @@ function removeStopWords(text) {
     .join(' ');
 }
 
-function preprocess(text) {
+export function preprocess(text) {
   const cleaned = String(text || '')
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, ' ')
