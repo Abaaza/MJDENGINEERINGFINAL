@@ -11,6 +11,7 @@ import projectRoutes from './routes/project.routes.js';
 import boqRoutes from './routes/boq.routes.js';
 import matchRoutes from './routes/match.routes.js';
 import priceRoutes from './routes/price.routes.js';
+import quotationRoutes from './routes/quotation.routes.js';
 import auth from './middlewares/auth.js';
 
 const app = express();
@@ -32,5 +33,6 @@ app.use('/api/projects', auth, projectRoutes);
 app.use('/api/boq', auth, boqRoutes);
 app.use('/api/match', auth, matchRoutes);
 app.use('/api/prices', auth, priceRoutes);
+app.use('/api/quotations', auth, quotationRoutes);
 
 export default app;

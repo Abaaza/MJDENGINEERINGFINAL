@@ -19,26 +19,48 @@ export interface Quotation {
 
 const KEY = 'quotations'
 
-export function loadQuotations(): Quotation[] {
+export async function loadQuotations(): Promise<Quotation[]> {
+  try {
+    const res = await fetch('/api/quotations', { cache: 'no-store' })
+    if (res.ok) return (await res.json()) as Quotation[]
+  } catch {
+    // ignore network errors
+  }
   if (typeof localStorage === 'undefined') return []
   try {
     const raw = localStorage.getItem(KEY)
-    return raw ? JSON.parse(raw) as Quotation[] : []
+    return raw ? (JSON.parse(raw) as Quotation[]) : []
   } catch {
     return []
   }
 }
 
-export function saveQuotation(q: Quotation) {
+export async function saveQuotation(q: Quotation) {
+  try {
+    await fetch('/api/quotations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(q),
+    })
+  } catch {
+    // ignore network errors
+  }
   if (typeof localStorage === 'undefined') return
-  const all = loadQuotations()
+  const all = await loadQuotations()
   const idx = all.findIndex(i => i.id === q.id)
   if (idx >= 0) all[idx] = q
   else all.push(q)
   localStorage.setItem(KEY, JSON.stringify(all))
 }
 
-export function getQuotation(id: string): Quotation | undefined {
-  return loadQuotations().find(q => q.id === id)
+export async function getQuotation(id: string): Promise<Quotation | undefined> {
+  try {
+    const res = await fetch(`/api/quotations/${id}`, { cache: 'no-store' })
+    if (res.ok) return (await res.json()) as Quotation
+  } catch {
+    // ignore
+  }
+  const all = await loadQuotations()
+  return all.find(q => q.id === id)
 }
 

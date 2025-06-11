@@ -43,6 +43,20 @@ export const EditableTable = memo(function EditableTable({ isEditing, initialIte
     setEditingRow(id)
   }
 
+  const handleChange = (id: number, field: keyof TableItem, value: string) => {
+    setItems(prev =>
+      prev.map(it => {
+        if (it.id !== id) return it
+        const updated = {
+          ...it,
+          [field]: field === 'description' || field === 'unit' ? value : Number(value)
+        }
+        updated.total = updated.quantity * updated.unitPrice
+        return updated
+      })
+    )
+  }
+
   const handleSave = (id: number) => {
     setEditingRow(null)
     onItemsChange?.(items)
@@ -100,28 +114,28 @@ export const EditableTable = memo(function EditableTable({ isEditing, initialIte
                 <TableRow key={item.id} className="border-white/10 hover:bg-white/5">
                   <TableCell>
                     {editingRow === item.id ? (
-                      <Input defaultValue={item.description} className="bg-white/5 border-white/10" />
+                      <Input value={item.description} onChange={e => handleChange(item.id, 'description', e.target.value)} className="bg-white/5 border-white/10" />
                     ) : (
                       <span className="text-white">{item.description}</span>
                     )}
                   </TableCell>
                   <TableCell>
                     {editingRow === item.id ? (
-                      <Input type="number" defaultValue={item.quantity} className="bg-white/5 border-white/10 w-20" />
+                      <Input type="number" value={item.quantity} onChange={e => handleChange(item.id, 'quantity', e.target.value)} className="bg-white/5 border-white/10 w-20" />
                     ) : (
                       <span className="text-white">{item.quantity}</span>
                     )}
                   </TableCell>
                   <TableCell>
                     {editingRow === item.id ? (
-                      <Input defaultValue={item.unit} className="bg-white/5 border-white/10 w-20" />
+                      <Input value={item.unit} onChange={e => handleChange(item.id, 'unit', e.target.value)} className="bg-white/5 border-white/10 w-20" />
                     ) : (
                       <span className="text-white">{item.unit}</span>
                     )}
                   </TableCell>
                   <TableCell>
                     {editingRow === item.id ? (
-                      <Input type="number" defaultValue={item.unitPrice} className="bg-white/5 border-white/10 w-24" />
+                      <Input type="number" value={item.unitPrice} onChange={e => handleChange(item.id, 'unitPrice', e.target.value)} className="bg-white/5 border-white/10 w-24" />
                     ) : (
                       <span className="text-white">${item.unitPrice.toLocaleString()}</span>
                     )}

@@ -31,17 +31,19 @@ export function QuotationGrid() {
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    const stored = loadQuotations().map(q => ({
-      id: q.id,
-      client: q.client,
-      project: q.project,
-      value: formatCurrency(q.value),
-      status: q.status,
-      date: formatDate(q.date),
-      items: q.items.length
-    }))
-    setQuotations(stored)
-    setVisibleQuotations(stored)
+    loadQuotations().then(raw => {
+      const stored = raw.map(q => ({
+        id: q.id,
+        client: q.client,
+        project: q.project,
+        value: formatCurrency(q.value),
+        status: q.status,
+        date: formatDate(q.date),
+        items: q.items.length
+      }))
+      setQuotations(stored)
+      setVisibleQuotations(stored)
+    })
   }, [])
 
   // Debounced search function

@@ -232,7 +232,7 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
       date: new Date().toISOString(),
       items
     }
-    saveQuotation(quotation)
+    await saveQuotation(quotation)
     const blob = new Blob([JSON.stringify({ discount, items }, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
