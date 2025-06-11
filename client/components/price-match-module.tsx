@@ -41,25 +41,18 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
   const logSrc = useRef<EventSource | null>(null)
   const [discountInput, setDiscountInput] = useState(0)
   const [discount, setDiscount] = useState(0)
-  const containerRef = useRef<HTMLDivElement | null>(null)
-  const rowHeight = 40
-  const [scrollTop, setScrollTop] = useState(0)
+  const [projectName, setProjectName] = useState("")
+  const [page, setPage] = useState(0)
+  const pageSize = 100
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0])
     }
   }
 
-  const onScroll = () => {
-    if (containerRef.current) {
-      setScrollTop(containerRef.current.scrollTop)
-    }
-  }
-
-  const containerHeight = 384
-  const visibleCount = Math.ceil(containerHeight / rowHeight) + 2
-  const startIndex = results ? Math.max(0, Math.floor(scrollTop / rowHeight) - 1) : 0
-  const endIndex = results ? Math.min(results.length, startIndex + visibleCount) : 0
+  const startIndex = results ? page * pageSize : 0
+  const endIndex = results ? Math.min(results.length, startIndex + pageSize) : 0
+  const pageCount = results ? Math.ceil(results.length / pageSize) : 0
 
   const runMatch = async () => {
     if (!file) return
@@ -147,7 +140,7 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
     const rate = row.rateOverride ?? sel?.unitRate ?? 0
     const total = rate * row.quantity * (1 - discount / 100)
     return (
-      <tr className="text-gray-300 border-t border-white/10 align-top" style={{ height: rowHeight }}>
+      <tr className="text-gray-300 border-t border-white/10 align-top">
         <td className="px-2 py-1 w-48">{row.inputDescription}</td>
         <td className="px-2 py-1">
           <RadioGroup
@@ -210,6 +203,10 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
 
   const handleSave = () => {
     if (!results) return
+    if (!projectName.trim()) {
+      alert('Project name is required')
+      return
+    }
     const items = results.map((r, idx) => {
       const sel = typeof r.selected === 'number' ? r.matches[r.selected] : null
       const rate = r.rateOverride ?? sel?.unitRate ?? 0
@@ -226,7 +223,7 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
     const quotation = {
       id: `QT-${Date.now()}`,
       client: 'Unknown Client',
-      project: 'Matched Quote',
+      project: projectName,
       value,
       status: 'pending',
       date: new Date().toISOString(),
@@ -250,6 +247,12 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
         <CardTitle className="text-white">Price Match</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <Input
+          placeholder="Project Name"
+          value={projectName}
+          onChange={e => setProjectName(e.target.value)}
+          className="bg-gray-800/20 border-white/10"
+        />
         <Input
           type="file"
           accept=".xlsx,.xls"
@@ -291,8 +294,8 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
           </div>
         )}
         {results && (
-          <div className="overflow-auto max-h-96" ref={containerRef} onScroll={onScroll}>
-            <table className="w-full text-sm text-left mt-4" style={{ height: results.length * rowHeight, position: 'relative' }}>
+          <div className="overflow-auto max-h-96">
+            <table className="w-full text-sm text-left mt-4">
               <thead>
                 <tr className="text-white">
                   <th className="px-2 py-1">Description</th>
@@ -304,7 +307,7 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
                   <th className="px-2 py-1">Total</th>
                 </tr>
               </thead>
-              <tbody style={{ transform: `translateY(${Math.floor(scrollTop / rowHeight) * rowHeight}px)` }}>
+              <tbody>
                 {results.slice(startIndex, endIndex).map((r, idx) => (
                   <PriceMatchRow key={startIndex + idx} row={r} index={startIndex + idx} />
                 ))}
@@ -322,6 +325,13 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
                 </tr>
               </tfoot>
             </table>
+            <div className="flex justify-between items-center mt-2">
+              <Button size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="bg-white/5 border-white/20">Prev</Button>
+              <span className="text-white text-sm">
+                Page {page + 1} of {pageCount || 1}
+              </span>
+              <Button size="sm" onClick={() => setPage(p => Math.min(pageCount - 1, p + 1))} disabled={page + 1 >= pageCount} className="bg-white/5 border-white/20">Next</Button>
+            </div>
           </div>
         )}
       </CardContent>
