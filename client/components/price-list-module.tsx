@@ -5,7 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { getPriceItems, searchPriceItems, updatePriceItem, PriceItem } from "@/lib/api"
+import {
+  getPriceItems,
+  searchPriceItems,
+  updatePriceItem,
+  createPriceItem,
+  deletePriceItem,
+  PriceItem,
+} from "@/lib/api"
 import { useAuth } from "@/contexts/auth-context"
 
 interface PriceItemExt extends PriceItem {
@@ -71,8 +78,15 @@ export function PriceListModule() {
         .filter(Boolean)
     }
     try {
-      const updated = await updatePriceItem(id, updates, token)
-      setItems(itms => itms.map(it => (it._id === id ? (updated as PriceItemExt) : it)))
+      let result: PriceItemExt
+      if (id.startsWith("new-")) {
+        result = (await createPriceItem(updates, token)) as PriceItemExt
+      } else {
+        result = (await updatePriceItem(id, updates, token)) as PriceItemExt
+      }
+      setItems(itms =>
+        itms.map(it => (it._id === id ? { ...result, _id: (result as any)._id.toString() } : it))
+      )
       setEditing(prev => {
         const { [id]: _, ...rest } = prev
         return rest
@@ -86,6 +100,31 @@ export function PriceListModule() {
     const ids = Object.keys(editing)
     for (const id of ids) {
       await handleSave(id)
+    }
+  }
+
+  const handleAdd = () => {
+    const id = `new-${Date.now()}`
+    const newItem: PriceItemExt = { _id: id, description: "" }
+    setItems(itms => [...itms, newItem])
+    setEditing(prev => ({ ...prev, [id]: newItem }))
+  }
+
+  const handleDelete = async (id: string) => {
+    if (id.startsWith("new-")) {
+      setItems(itms => itms.filter(it => it._id !== id))
+      setEditing(prev => {
+        const { [id]: _, ...rest } = prev
+        return rest
+      })
+      return
+    }
+    if (!token) return
+    try {
+      await deletePriceItem(id, token)
+      setItems(itms => itms.filter(it => it._id !== id))
+    } catch (err) {
+      console.error(err)
     }
   }
 
@@ -109,6 +148,13 @@ export function PriceListModule() {
             className="bg-[#00D4FF]/20 hover:bg-[#00D4FF]/30 text-[#00D4FF] border-[#00D4FF]/30 ripple"
           >
             Save All
+          </Button>
+          <Button
+            size="sm"
+            onClick={handleAdd}
+            className="bg-[#00FF88]/20 hover:bg-[#00FF88]/30 text-[#00FF88] border-[#00FF88]/30 ripple"
+          >
+            Add Item
           </Button>
         </div>
         {loading ? (
@@ -183,9 +229,20 @@ export function PriceListModule() {
                           onChange={e => handleChange(item._id!, "phrases", e.target.value)}
                         />
                       </TableCell>
-                      <TableCell>
-                        <Button size="sm" onClick={() => handleSave(item._id!)} className="bg-[#00D4FF]/20 hover:bg-[#00D4FF]/30 text-[#00D4FF] border-[#00D4FF]/30 ripple">
+                      <TableCell className="space-x-1">
+                        <Button
+                          size="sm"
+                          onClick={() => handleSave(item._id!)}
+                          className="bg-[#00D4FF]/20 hover:bg-[#00D4FF]/30 text-[#00D4FF] border-[#00D4FF]/30 ripple"
+                        >
                           Save
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleDelete(item._id!)}
+                          className="bg-red-500/20 hover:bg-red-500/30 text-red-500 border-red-500/30 ripple"
+                        >
+                          Delete
                         </Button>
                       </TableCell>
                     </TableRow>

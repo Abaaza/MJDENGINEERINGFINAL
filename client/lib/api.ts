@@ -126,3 +126,21 @@ export async function updatePriceItem(id: string, updates: Partial<PriceItem>, t
   if (!res.ok) throw new Error('Update failed')
   return res.json()
 }
+
+export async function createPriceItem(item: PriceItem, token: string): Promise<PriceItem> {
+  const res = await fetch(`${base}/api/prices`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(item),
+  })
+  if (!res.ok) throw new Error('Create failed')
+  return res.json()
+}
+
+export async function deletePriceItem(id: string, token: string): Promise<void> {
+  const res = await fetch(`${base}/api/prices/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) throw new Error('Delete failed')
+}

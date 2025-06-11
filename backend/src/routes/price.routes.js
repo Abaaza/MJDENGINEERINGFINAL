@@ -53,4 +53,16 @@ router.patch('/:id', async (req, res) => {
   }
 });
 
+// Delete a price item
+router.delete('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const doc = await PriceItem.findByIdAndDelete(id);
+    if (!doc) return res.status(404).json({ message: 'Not found' });
+    res.json({ message: 'Deleted' });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
 export default router;
