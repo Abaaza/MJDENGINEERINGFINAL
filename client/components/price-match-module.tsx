@@ -45,6 +45,7 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
   const [clientName, setClientName] = useState("")
   const [page, setPage] = useState(0)
   const pageSize = 100
+  const [inputsCollapsed, setInputsCollapsed] = useState(false)
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0])
@@ -81,6 +82,7 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
       }))
       setResults(rows)
       onMatched?.()
+      setInputsCollapsed(true)
     } catch (err) {
       console.error(err)
       setError(err instanceof Error ? err.message : String(err))
@@ -169,7 +171,10 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
                     <li
                       key={item._id || item.code}
                       className="px-2 py-1 hover:bg-white/10 cursor-pointer"
-                      onClick={() => chooseManual(index, item)}
+                      onClick={e => {
+                        e.preventDefault()
+                        chooseManual(index, item)
+                      }}
                     >
                       {item.description}
                     </li>
@@ -248,25 +253,39 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
         <CardTitle className="text-white">Price Match</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Input
-          placeholder="Project Name"
-          value={projectName}
-          onChange={e => setProjectName(e.target.value)}
-          className="bg-gray-800/20 border-white/10"
-        />
-        <Input
-          placeholder="Client Name"
-          value={clientName}
-          onChange={e => setClientName(e.target.value)}
-          className="bg-gray-800/20 border-white/10"
-        />
-        <Input
-          type="file"
-          accept=".xlsx,.xls"
-          onChange={handleFile}
-          className="bg-gray-800/20 border-white/10 file:bg-gray-700 file:text-white"
-        />
-        <Button onClick={runMatch} disabled={!file || loading} className="bg-gradient-to-r from-[#00D4FF] to-[#00FF88] text-black font-semibold">
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => setInputsCollapsed(!inputsCollapsed)}
+            className="bg-white/5 border-white/20"
+          >
+            {inputsCollapsed ? 'Show Inputs' : 'Hide Inputs'}
+          </Button>
+        </div>
+        {!inputsCollapsed && (
+          <>
+            <Input
+              placeholder="Project Name"
+              value={projectName}
+              onChange={e => setProjectName(e.target.value)}
+              className="bg-gray-800/20 border-white/10"
+            />
+            <Input
+              placeholder="Client Name"
+              value={clientName}
+              onChange={e => setClientName(e.target.value)}
+              className="bg-gray-800/20 border-white/10"
+            />
+            <Input
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleFile}
+              className="bg-gray-800/20 border-white/10 file:bg-gray-700 file:text-white"
+            />
+          </>
+        )}
+        <Button type="button" onClick={runMatch} disabled={!file || loading} className="bg-gradient-to-r from-[#00D4FF] to-[#00FF88] text-black font-semibold">
           {loading ? "Matching..." : "Start Matching"}
         </Button>
         {(loading || logs.length > 0) && (
@@ -288,6 +307,7 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
                 className="w-20 bg-white/5 border-white/20"
               />
               <Button
+                type="button"
                 size="sm"
                 onClick={() => setDiscount(discountInput)}
                 className="bg-[#00D4FF]/20 hover:bg-[#00D4FF]/30 text-[#00D4FF] border-[#00D4FF]/30 ripple"
@@ -295,7 +315,7 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
                 Apply Discount
               </Button>
             </div>
-            <Button onClick={handleSave} size="sm" className="bg-[#00FF88]/20 hover:bg-[#00FF88]/30 text-[#00FF88] border-[#00FF88]/30 ripple">
+            <Button type="button" onClick={handleSave} size="sm" className="bg-[#00FF88]/20 hover:bg-[#00FF88]/30 text-[#00FF88] border-[#00FF88]/30 ripple">
               Save Quote
             </Button>
           </div>
@@ -333,11 +353,11 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
               </tfoot>
             </table>
             <div className="flex justify-between items-center mt-2">
-              <Button size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="bg-white/5 border-white/20">Prev</Button>
+              <Button type="button" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} className="bg-white/5 border-white/20">Prev</Button>
               <span className="text-white text-sm">
                 Page {page + 1} of {pageCount || 1}
               </span>
-              <Button size="sm" onClick={() => setPage(p => Math.min(pageCount - 1, p + 1))} disabled={page + 1 >= pageCount} className="bg-white/5 border-white/20">Next</Button>
+              <Button type="button" size="sm" onClick={() => setPage(p => Math.min(pageCount - 1, p + 1))} disabled={page + 1 >= pageCount} className="bg-white/5 border-white/20">Next</Button>
             </div>
           </div>
         )}
