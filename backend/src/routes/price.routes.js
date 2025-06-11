@@ -3,10 +3,46 @@ import PriceItem from '../models/PriceItem.js';
 
 const router = Router();
 
-// List all price items
+// List price items with pagination, sorting and optional search
 router.get('/', async (req, res) => {
-  const items = await PriceItem.find({}).sort({ description: 1 }).lean();
-  res.json(items);
+  const page = Math.max(parseInt(req.query.page) || 1, 1);
+  const limit = Math.max(parseInt(req.query.limit) || 50, 1);
+  const sortParam = req.query.sort || 'description';
+  const sort = {};
+  if (typeof sortParam === 'string') {
+    if (sortParam.startsWith('-')) {
+      sort[sortParam.slice(1)] = -1;
+    } else {
+      sort[sortParam] = 1;
+    }
+  }
+
+  const q = String(req.query.q || '').trim();
+  const filter = {};
+  if (q) {
+    const regex = new RegExp(q, 'i');
+    Object.assign(filter, {
+      $or: [
+        { description: regex },
+        { code: regex },
+        { ref: regex },
+        { category: regex },
+        { subCategory: regex },
+        { keywords: regex },
+        { phrases: regex },
+      ],
+    });
+  }
+
+  const [items, total] = await Promise.all([
+    PriceItem.find(filter)
+      .sort(sort)
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean(),
+    PriceItem.countDocuments(filter),
+  ]);
+  res.json({ items, total });
 });
 
 // Search by code, description or other fields

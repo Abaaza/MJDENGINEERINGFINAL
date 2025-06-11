@@ -111,8 +111,23 @@ export async function searchPriceItems(query: string, token: string): Promise<Pr
   return res.json()
 }
 
-export async function getPriceItems(token: string): Promise<PriceItem[]> {
-  const res = await fetch(`${base}/api/prices`, { headers: { Authorization: `Bearer ${token}` } })
+export interface PaginatedResult<T> {
+  items: T[]
+  total: number
+}
+
+export async function getPriceItems(
+  token: string,
+  opts: { page?: number; limit?: number; sort?: string; q?: string } = {}
+): Promise<PaginatedResult<PriceItem>> {
+  const params = new URLSearchParams()
+  if (opts.page) params.append('page', String(opts.page))
+  if (opts.limit) params.append('limit', String(opts.limit))
+  if (opts.sort) params.append('sort', opts.sort)
+  if (opts.q) params.append('q', opts.q)
+  const res = await fetch(`${base}/api/prices?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
   if (!res.ok) throw new Error('Failed to fetch prices')
   return res.json()
 }
