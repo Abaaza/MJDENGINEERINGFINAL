@@ -27,8 +27,14 @@ export function PriceListModule() {
     setLoading(true)
     try {
       if (!token) return
-      const data = term ? await searchPriceItems(term, token) : await getPriceItems(token)
-      setItems(data as PriceItemExt[])
+      const data = term
+        ? await searchPriceItems(term, token)
+        : await getPriceItems(token)
+      const normalized = (data as PriceItemExt[]).map(it => ({
+        ...it,
+        _id: (it as any)._id ? (it as any)._id.toString() : undefined,
+      }))
+      setItems(normalized)
     } catch (err) {
       console.error(err)
     } finally {
@@ -76,18 +82,35 @@ export function PriceListModule() {
     }
   }
 
+  const handleSaveAll = async () => {
+    const ids = Object.keys(editing)
+    for (const id of ids) {
+      await handleSave(id)
+    }
+  }
+
   return (
     <Card className="glass-effect border-white/10">
       <CardHeader>
         <CardTitle className="text-white">Price List</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Input
-          placeholder="Search..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="max-w-sm bg-white/5 border-white/10 focus:border-[#00D4FF] focus:ring-[#00D4FF]/20"
-        />
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="Search..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="max-w-sm bg-white/5 border-white/10 focus:border-[#00D4FF] focus:ring-[#00D4FF]/20"
+          />
+          <Button
+            size="sm"
+            onClick={handleSaveAll}
+            disabled={Object.keys(editing).length === 0}
+            className="bg-[#00D4FF]/20 hover:bg-[#00D4FF]/30 text-[#00D4FF] border-[#00D4FF]/30 ripple"
+          >
+            Save All
+          </Button>
+        </div>
         {loading ? (
           <p className="text-sm text-gray-400">Loading...</p>
         ) : (
