@@ -36,6 +36,7 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
   const { token } = useAuth()
   const router = useRouter()
   const [file, setFile] = useState<File | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [results, setResults] = useState<Row[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [logs, setLogs] = useState<string[]>([])
@@ -52,6 +53,10 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
   const [headerRow, setHeaderRow] = useState<string[]>([])
   const [headerIndex, setHeaderIndex] = useState(0)
   const [colIdx, setColIdx] = useState<{desc:number; qty:number; unit:number; rate:number} | null>(null)
+
+  useEffect(() => {
+    fileInputRef.current?.click()
+  }, [])
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const f = e.target.files[0]
@@ -367,6 +372,7 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
               type="file"
               accept=".xlsx,.xls"
               onChange={handleFile}
+              ref={fileInputRef}
               className="bg-gray-800/20 border-white/10 file:bg-gray-700 file:text-white"
             />
           </>

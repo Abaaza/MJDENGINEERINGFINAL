@@ -20,7 +20,7 @@ export default function LoginPage() {
     e.preventDefault()
     try {
       await login(email, password)
-      router.push("/")
+      router.push("/quotations")
     } catch (err) {
       setError("Invalid credentials")
     }
