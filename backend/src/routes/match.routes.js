@@ -2,8 +2,8 @@ import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 import { EventEmitter } from 'events';
-import { openAiMatchFromFiles } from '../services/openAiService.js';
-import { cohereMatchFromFiles } from '../services/cohereService.js';
+import { openAiMatchFromFiles, openAiMatchFromDb } from '../services/openAiService.js';
+import { cohereMatchFromFiles, cohereMatchFromDb } from '../services/cohereService.js';
 import { matchFromFiles } from '../services/matchService.js';
 import { fileURLToPath } from 'url';
 
@@ -48,19 +48,16 @@ router.post('/', upload.single('file'), async (req, res) => {
   console.log('Cohere key provided:', !!cohereKey);
   try {
     let results;
+    const useDb = !!process.env.CONNECTION_STRING;
     if (openaiKey && cohereKey) {
       console.log('Calling OpenAI matcher');
-      const openaiResults = await openAiMatchFromFiles(
-        PRICE_FILE,
-        req.file.buffer,
-        openaiKey
-      );
+      const openaiResults = await (useDb
+        ? openAiMatchFromDb(req.file.buffer, openaiKey)
+        : openAiMatchFromFiles(PRICE_FILE, req.file.buffer, openaiKey));
       console.log('Calling Cohere matcher');
-      const cohereResults = await cohereMatchFromFiles(
-        PRICE_FILE,
-        req.file.buffer,
-        cohereKey
-      );
+      const cohereResults = await (useDb
+        ? cohereMatchFromDb(req.file.buffer, cohereKey)
+        : cohereMatchFromFiles(PRICE_FILE, req.file.buffer, cohereKey));
       results = openaiResults.map((o, idx) => {
         const c = cohereResults[idx] || { matches: [] };
         const openaiBest = o.matches[0];
@@ -73,14 +70,14 @@ router.post('/', upload.single('file'), async (req, res) => {
       });
     } else if (openaiKey) {
       console.log('Calling OpenAI matcher');
-      results = await openAiMatchFromFiles(PRICE_FILE, req.file.buffer, openaiKey);
+      results = await (useDb
+        ? openAiMatchFromDb(req.file.buffer, openaiKey)
+        : openAiMatchFromFiles(PRICE_FILE, req.file.buffer, openaiKey));
     } else if (cohereKey) {
       console.log('Calling Cohere matcher');
-      results = await cohereMatchFromFiles(
-        PRICE_FILE,
-        req.file.buffer,
-        cohereKey
-      );
+      results = await (useDb
+        ? cohereMatchFromDb(req.file.buffer, cohereKey)
+        : cohereMatchFromFiles(PRICE_FILE, req.file.buffer, cohereKey));
     } else {
       // Fallback to built-in matcher when no external API key is provided
       results = matchFromFiles(PRICE_FILE, req.file.buffer);
