@@ -1,48 +1,95 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { TrendingUp, TrendingDown, DollarSign, FileText, Users, Clock } from "lucide-react"
+import { loadQuotations } from "@/lib/quotation-store"
+import { formatCurrency } from "@/lib/utils"
 
-const metrics = [
-  {
-    title: "Monthly Revenue",
-    value: "$485,000",
-    change: "+12.5%",
-    trend: "up",
-    icon: DollarSign,
-  },
-  {
-    title: "Quotations Sent",
-    value: "127",
-    change: "+8.2%",
-    trend: "up",
-    icon: FileText,
-  },
-  {
-    title: "Active Clients",
-    value: "34",
-    change: "+15.3%",
-    trend: "up",
-    icon: Users,
-  },
-  {
-    title: "Avg. Response Time",
-    value: "2.4 hrs",
-    change: "-18.7%",
-    trend: "up",
-    icon: Clock,
-  },
-]
+interface Metric {
+  title: string
+  value: string
+  change?: string
+  trend?: "up" | "down"
+  icon: any
+}
 
-const projectTypes = [
-  { name: "Commercial Buildings", value: 45, color: "#00D4FF" },
-  { name: "Residential Projects", value: 30, color: "#00FF88" },
-  { name: "Infrastructure", value: 15, color: "#FF6B35" },
-  { name: "Industrial", value: 10, color: "#FACC15" },
-]
+interface DistributionItem {
+  name: string
+  value: number
+  color: string
+}
 
 export function AnalyticsDashboard() {
+  const [metrics, setMetrics] = useState<Metric[]>([])
+  const [distribution, setDistribution] = useState<DistributionItem[]>([])
+  const [activity, setActivity] = useState<string[]>([])
+
+  useEffect(() => {
+    loadQuotations().then(qs => {
+      const now = new Date()
+      const monthlyTotal = qs
+        .filter(q => {
+          const d = new Date(q.date)
+          return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+        })
+        .reduce((s, q) => s + q.value, 0)
+
+      const clients = new Set(qs.map(q => q.client))
+
+      const statusCount: Record<string, number> = {}
+      qs.forEach(q => {
+        statusCount[q.status] = (statusCount[q.status] || 0) + 1
+      })
+      const total = qs.length || 1
+      const colors = ["#00D4FF", "#00FF88", "#FF6B35", "#FACC15"]
+      const dist = Object.entries(statusCount).map(([name, cnt], idx) => ({
+        name,
+        value: Math.round((cnt / total) * 100),
+        color: colors[idx % colors.length]
+      }))
+
+      setDistribution(dist)
+
+      setMetrics([
+        {
+          title: "Monthly Revenue",
+          value: formatCurrency(monthlyTotal),
+          trend: "up",
+          change: "",
+          icon: DollarSign
+        },
+        {
+          title: "Quotations Sent",
+          value: String(qs.length),
+          trend: "up",
+          change: "",
+          icon: FileText
+        },
+        {
+          title: "Active Clients",
+          value: String(clients.size),
+          trend: "up",
+          change: "",
+          icon: Users
+        },
+        {
+          title: "Pending Quotations",
+          value: String(statusCount["pending"] || 0),
+          trend: "up",
+          change: "",
+          icon: Clock
+        }
+      ])
+
+      const recent = qs
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 3)
+        .map(q => `Quotation ${q.id} created for ${q.client}`)
+      setActivity(recent)
+    })
+  }, [])
   return (
     <div className="space-y-8">
       {/* Key Metrics */}
@@ -82,7 +129,7 @@ export function AnalyticsDashboard() {
             <CardTitle className="text-white">Project Types Distribution</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {projectTypes.map((type, index) => (
+            {distribution.map((type, index) => (
               <div key={index} className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-white">{type.name}</span>
@@ -101,27 +148,14 @@ export function AnalyticsDashboard() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
-              <div className="flex items-center space-x-3 p-3 rounded-lg bg-white/5">
-                <div className="w-2 h-2 bg-[#00FF88] rounded-full"></div>
-                <div className="flex-1">
-                  <p className="text-sm text-white">Quotation QT-2024-007 approved</p>
-                  <p className="text-xs text-gray-400">2 hours ago</p>
+              {activity.map((msg, idx) => (
+                <div key={idx} className="flex items-center space-x-3 p-3 rounded-lg bg-white/5">
+                  <div className="w-2 h-2 bg-[#00FF88] rounded-full"></div>
+                  <div className="flex-1">
+                    <p className="text-sm text-white">{msg}</p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center space-x-3 p-3 rounded-lg bg-white/5">
-                <div className="w-2 h-2 bg-[#00D4FF] rounded-full"></div>
-                <div className="flex-1">
-                  <p className="text-sm text-white">New client Metro Construction added</p>
-                  <p className="text-xs text-gray-400">4 hours ago</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3 p-3 rounded-lg bg-white/5">
-                <div className="w-2 h-2 bg-[#FF6B35] rounded-full"></div>
-                <div className="flex-1">
-                  <p className="text-sm text-white">Excel file processed: 45 items</p>
-                  <p className="text-xs text-gray-400">6 hours ago</p>
-                </div>
-              </div>
+              ))}
             </div>
           </CardContent>
         </Card>
