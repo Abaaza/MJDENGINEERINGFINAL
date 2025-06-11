@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 import {
   getPriceItems,
-  searchPriceItems,
   updatePriceItem,
   createPriceItem,
   deletePriceItem,
@@ -25,23 +26,31 @@ interface PriceItemExt extends PriceItem {
 
 export function PriceListModule() {
   const [items, setItems] = useState<PriceItemExt[]>([])
+  const [total, setTotal] = useState(0)
   const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(false)
   const [editing, setEditing] = useState<Record<string, Partial<PriceItemExt>>>({})
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(50)
+  const [sort, setSort] = useState("description")
   const { token } = useAuth()
 
-  const load = async (term: string) => {
+  const load = async () => {
     setLoading(true)
     try {
       if (!token) return
-      const data = term
-        ? await searchPriceItems(term, token)
-        : await getPriceItems(token)
-      const normalized = (data as PriceItemExt[]).map(it => ({
+      const data = await getPriceItems(token, {
+        page,
+        limit,
+        sort,
+        q: search,
+      })
+      const normalized = data.items.map(it => ({
         ...it,
         _id: (it as any)._id ? (it as any)._id.toString() : undefined,
       }))
       setItems(normalized)
+      setTotal(data.total)
     } catch (err) {
       console.error(err)
     } finally {
@@ -50,8 +59,8 @@ export function PriceListModule() {
   }
 
   useEffect(() => {
-    load(search)
-  }, [search, token])
+    load()
+  }, [search, token, page, limit, sort])
 
   const handleChange = (id: string, field: keyof PriceItemExt, value: any) => {
     setEditing(prev => ({
@@ -134,13 +143,35 @@ export function PriceListModule() {
         <CardTitle className="text-white">Price List</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Input
             placeholder="Search..."
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="max-w-sm bg-white/5 border-white/10 focus:border-[#00D4FF] focus:ring-[#00D4FF]/20"
           />
+          <Select value={String(limit)} onValueChange={val => { setPage(1); setLimit(parseInt(val)) }}>
+            <SelectTrigger className="w-20 bg-white/5 border-white/10">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="100">100</SelectItem>
+              <SelectItem value="200">200</SelectItem>
+              <SelectItem value="300">300</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={sort} onValueChange={val => { setPage(1); setSort(val) }}>
+            <SelectTrigger className="w-32 bg-white/5 border-white/10">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="description">Description ⬆</SelectItem>
+              <SelectItem value="-description">Description ⬇</SelectItem>
+              <SelectItem value="rate">Rate ⬆</SelectItem>
+              <SelectItem value="-rate">Rate ⬇</SelectItem>
+            </SelectContent>
+          </Select>
           <Button
             size="sm"
             onClick={handleSaveAll}
@@ -252,6 +283,19 @@ export function PriceListModule() {
             </Table>
           </div>
         )}
+        <Pagination className="pt-4">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious href="#" onClick={e => { e.preventDefault(); setPage(p => Math.max(1, p - 1)) }} />
+            </PaginationItem>
+            <PaginationItem className="px-3 py-2 text-sm text-white">
+              {page} / {Math.max(1, Math.ceil(total / limit))}
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationNext href="#" onClick={e => { e.preventDefault(); setPage(p => Math.min(Math.ceil(total / limit), p + 1)) }} />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
       </CardContent>
     </Card>
   )
