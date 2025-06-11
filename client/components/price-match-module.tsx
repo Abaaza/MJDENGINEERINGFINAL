@@ -42,6 +42,7 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
   const [discountInput, setDiscountInput] = useState(0)
   const [discount, setDiscount] = useState(0)
   const [projectName, setProjectName] = useState("")
+  const [clientName, setClientName] = useState("")
   const [page, setPage] = useState(0)
   const pageSize = 100
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -203,8 +204,8 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
 
   const handleSave = () => {
     if (!results) return
-    if (!projectName.trim()) {
-      alert('Project name is required')
+    if (!projectName.trim() || !clientName.trim()) {
+      alert('Project and client name are required')
       return
     }
     const items = results.map((r, idx) => {
@@ -222,7 +223,7 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
     const value = items.reduce((s, i) => s + i.total, 0)
     const quotation = {
       id: `QT-${Date.now()}`,
-      client: 'Unknown Client',
+      client: clientName,
       project: projectName,
       value,
       status: 'pending',
@@ -251,6 +252,12 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
           placeholder="Project Name"
           value={projectName}
           onChange={e => setProjectName(e.target.value)}
+          className="bg-gray-800/20 border-white/10"
+        />
+        <Input
+          placeholder="Client Name"
+          value={clientName}
+          onChange={e => setClientName(e.target.value)}
           className="bg-gray-800/20 border-white/10"
         />
         <Input

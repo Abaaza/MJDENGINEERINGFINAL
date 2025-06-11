@@ -1,66 +1,53 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Building, Mail, Phone, MapPin, Eye } from "lucide-react"
+import { loadQuotations } from "@/lib/quotation-store"
+import { formatCurrency } from "@/lib/utils"
 
-const clients = [
-  {
-    id: 1,
-    name: "Metro Construction Ltd.",
-    type: "Construction Company",
-    email: "contact@metroconstruction.com",
-    phone: "+1 (555) 123-4567",
-    address: "123 Business District, Metro City",
-    projects: 12,
-    totalValue: "$4.2M",
-    status: "Premium",
-  },
-  {
-    id: 2,
-    name: "Urban Developers Inc.",
-    type: "Real Estate Developer",
-    email: "info@urbandevelopers.com",
-    phone: "+1 (555) 234-5678",
-    address: "456 Development Ave, Urban City",
-    projects: 8,
-    totalValue: "$2.8M",
-    status: "Active",
-  },
-  {
-    id: 3,
-    name: "City Infrastructure",
-    type: "Government Agency",
-    email: "projects@cityinfra.gov",
-    phone: "+1 (555) 345-6789",
-    address: "789 Government Plaza, City Hall",
-    projects: 15,
-    totalValue: "$8.1M",
-    status: "Premium",
-  },
-  {
-    id: 4,
-    name: "Green Building Corp.",
-    type: "Sustainable Construction",
-    email: "hello@greenbuilding.com",
-    phone: "+1 (555) 456-7890",
-    address: "321 Eco Street, Green Valley",
-    projects: 6,
-    totalValue: "$1.9M",
-    status: "Active",
-  },
-]
+
+interface ClientInfo {
+  id: number
+  name: string
+  projects: number
+  totalValue: string
+  status: string
+  type?: string
+  email?: string
+  phone?: string
+  address?: string
+}
 
 export function ClientsGrid() {
   const [searchTerm, setSearchTerm] = useState("")
+  const [clients, setClients] = useState<ClientInfo[]>([])
+
+  useEffect(() => {
+    loadQuotations().then(qs => {
+      const map = new Map<string, { projects: number; total: number }>()
+      qs.forEach(q => {
+        const info = map.get(q.client) || { projects: 0, total: 0 }
+        info.projects += 1
+        info.total += q.value
+        map.set(q.client, info)
+      })
+      const arr: ClientInfo[] = Array.from(map.entries()).map(([name, info], idx) => ({
+        id: idx + 1,
+        name,
+        projects: info.projects,
+        totalValue: formatCurrency(info.total),
+        status: "Active"
+      }))
+      setClients(arr)
+    })
+  }, [])
 
   const filteredClients = clients.filter(
-    (client) =>
-      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.type.toLowerCase().includes(searchTerm.toLowerCase()),
+    client => client.name.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   return (

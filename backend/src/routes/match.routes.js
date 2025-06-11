@@ -49,11 +49,13 @@ router.post('/', upload.single('file'), async (req, res) => {
   try {
     let results;
     if (openaiKey && cohereKey) {
+      console.log('Calling OpenAI matcher');
       const openaiResults = await openAiMatchFromFiles(
         PRICE_FILE,
         req.file.buffer,
         openaiKey
       );
+      console.log('Calling Cohere matcher');
       const cohereResults = await cohereMatchFromFiles(
         PRICE_FILE,
         req.file.buffer,
@@ -70,8 +72,10 @@ router.post('/', upload.single('file'), async (req, res) => {
         };
       });
     } else if (openaiKey) {
+      console.log('Calling OpenAI matcher');
       results = await openAiMatchFromFiles(PRICE_FILE, req.file.buffer, openaiKey);
     } else if (cohereKey) {
+      console.log('Calling Cohere matcher');
       results = await cohereMatchFromFiles(
         PRICE_FILE,
         req.file.buffer,
