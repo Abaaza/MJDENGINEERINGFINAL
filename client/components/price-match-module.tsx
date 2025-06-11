@@ -1,12 +1,14 @@
 "use client"
 
 import { useState, useRef, memo, useEffect } from "react"
+import * as XLSX from "xlsx"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { priceMatch, searchPriceItems, PriceItem } from "@/lib/api"
 import { saveQuotation } from "@/lib/quotation-store"
+import { Trash } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { useApiKeys } from "@/contexts/api-keys-context"
@@ -46,9 +48,38 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
   const [page, setPage] = useState(0)
   const pageSize = 100
   const [inputsCollapsed, setInputsCollapsed] = useState(false)
+  const [workbook, setWorkbook] = useState<XLSX.WorkBook | null>(null)
+  const [headerRow, setHeaderRow] = useState<string[]>([])
+  const [headerIndex, setHeaderIndex] = useState(0)
+  const [colIdx, setColIdx] = useState<{desc:number; qty:number; unit:number; rate:number} | null>(null)
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0])
+      const f = e.target.files[0]
+      setFile(f)
+      const reader = new FileReader()
+      reader.onload = evt => {
+        const data = evt.target?.result
+        if (!data) return
+        const wb = XLSX.read(data, { type: 'array' })
+        const ws = wb.Sheets[wb.SheetNames[0]]
+        const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
+        const idx = rows.findIndex(r =>
+          r.some(c => /(description|desc|details)/i.test(String(c))) &&
+          r.some(c => /(rate|price|unit\s*price|unit\s*rate)/i.test(String(c)))
+        )
+        if (idx !== -1) {
+          setHeaderRow(rows[idx].map(String))
+          setHeaderIndex(idx)
+          const head = rows[idx].map((h: any) => String(h))
+          const desc = head.findIndex(h => /(description|desc|details)/i.test(h))
+          const qty = head.findIndex(h => /(qty|quantity|amount)/i.test(h))
+          const rate = head.findIndex(h => /(rate|price|unit\s*price|unit\s*rate)/i.test(h))
+          const unit = head.findIndex(h => /(unit|uom)/i.test(h))
+          setColIdx({ desc, qty, unit, rate })
+        }
+        setWorkbook(wb)
+      }
+      reader.readAsArrayBuffer(f)
     }
   }
 
@@ -83,6 +114,10 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
       setResults(rows)
       onMatched?.()
       setInputsCollapsed(true)
+      if (projectName.trim() && clientName.trim()) {
+        const id = await saveQuotationData(rows)
+        setAutoQuoteId(id)
+      }
     } catch (err) {
       console.error(err)
       setError(err instanceof Error ? err.message : String(err))
@@ -203,17 +238,19 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
         </td>
         <td className="px-2 py-1">{sel?.confidence ?? ''}</td>
         <td className="px-2 py-1">{rate ? total.toLocaleString() : ''}</td>
+        <td className="px-2 py-1">
+          <Button type="button" size="icon" onClick={() => handleDeleteRow(index)} className="bg-red-500/20 hover:bg-red-500/30 text-red-500 border-red-500/30 ripple">
+            <Trash className="h-4 w-4" />
+          </Button>
+        </td>
       </tr>
     )
   })
 
-  const handleSave = async () => {
-    if (!results) return
-    if (!projectName.trim() || !clientName.trim()) {
-      alert('Project and client name are required')
-      return
-    }
-    const items = results.map((r, idx) => {
+  const [autoQuoteId, setAutoQuoteId] = useState<string | null>(null)
+
+  const saveQuotationData = async (rows: Row[], id?: string) => {
+    const items = rows.map((r, idx) => {
       const sel = typeof r.selected === 'number' ? r.matches[r.selected] : null
       const rate = r.rateOverride ?? sel?.unitRate ?? 0
       return {
@@ -227,7 +264,7 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
     })
     const value = items.reduce((s, i) => s + i.total, 0)
     const quotation = {
-      id: `QT-${Date.now()}`,
+      id: id || `QT-${Date.now()}`,
       client: clientName,
       project: projectName,
       value,
@@ -236,6 +273,55 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
       items
     }
     await saveQuotation(quotation)
+    return quotation.id
+  }
+
+  const handleDeleteRow = (index: number) => {
+    if (!results) return
+    setResults(results.filter((_, i) => i !== index))
+  }
+
+  const exportExcel = () => {
+    if (!results || !workbook || !colIdx) return
+    const ws = workbook.Sheets[workbook.SheetNames[0]]
+    const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
+    const out: any[][] = rows.slice(0, headerIndex + 1)
+    results.forEach((r, i) => {
+      const base = rows[headerIndex + 1 + i] ? [...rows[headerIndex + 1 + i]] : Array(headerRow.length).fill('')
+      base[colIdx.desc] = r.inputDescription
+      base[colIdx.qty] = r.quantity
+      const sel = typeof r.selected === 'number' ? r.matches[r.selected] : null
+      if (colIdx.unit >= 0) base[colIdx.unit] = sel?.unit || ''
+      if (colIdx.rate >= 0) base[colIdx.rate] = r.rateOverride ?? sel?.unitRate ?? ''
+      out.push(base)
+    })
+    const outWs = XLSX.utils.aoa_to_sheet(out)
+    const outWb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(outWb, outWs, workbook.SheetNames[0])
+    XLSX.writeFile(outWb, 'price_match_output.xlsx')
+  }
+
+  const handleSave = async () => {
+    if (!results) return
+    if (!projectName.trim() || !clientName.trim()) {
+      alert('Project and client name are required')
+      return
+    }
+    const id = await saveQuotationData(results, autoQuoteId || undefined)
+    setAutoQuoteId(id)
+    const items = results.map((r, idx) => {
+      const sel = typeof r.selected === 'number' ? r.matches[r.selected] : null
+      const rate = r.rateOverride ?? sel?.unitRate ?? 0
+      return {
+        id: idx + 1,
+        description: r.inputDescription,
+        quantity: r.quantity,
+        unit: sel?.unit || '',
+        unitPrice: rate,
+        total: rate * r.quantity * (1 - discount / 100)
+      }
+    })
+    const value = items.reduce((s, i) => s + i.total, 0)
     const blob = new Blob([JSON.stringify({ discount, items }, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -244,7 +330,7 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
     a.click()
     URL.revokeObjectURL(url)
     alert(`Quotation saved. Total: ${formatCurrency(value)}`)
-    router.push(`/quotations/${quotation.id}`)
+    router.push(`/quotations/${id}`)
   }
 
   return (
@@ -318,6 +404,9 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
             <Button type="button" onClick={handleSave} size="sm" className="bg-[#00FF88]/20 hover:bg-[#00FF88]/30 text-[#00FF88] border-[#00FF88]/30 ripple">
               Save Quote
             </Button>
+            <Button type="button" onClick={exportExcel} size="sm" className="bg-white/5 border-white/20 ml-2">
+              Export Excel
+            </Button>
           </div>
         )}
         {results && (
@@ -332,6 +421,7 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
                   <th className="px-2 py-1">Rate</th>
                   <th className="px-2 py-1">Conf.</th>
                   <th className="px-2 py-1">Total</th>
+                  <th className="px-2 py-1">Delete</th>
                 </tr>
               </thead>
               <tbody>
@@ -341,7 +431,7 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
               </tbody>
               <tfoot>
                 <tr className="border-t border-white/10 text-white">
-                  <td colSpan={6} className="text-right px-2 py-1 font-semibold">Total</td>
+                  <td colSpan={7} className="text-right px-2 py-1 font-semibold">Total</td>
                   <td className="px-2 py-1 font-semibold">
                     {results.reduce((sum, r) => {
                       const sel = typeof r.selected === 'number' ? r.matches[r.selected] : null
