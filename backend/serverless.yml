@@ -27,6 +27,8 @@ provider:
 functions:
   api:
     handler: src/handler.handler
+    timeout: 900 # increase timeout to 60 seconds (adjust as needed)
+    memorySize: 2048 # increase memory to 1024 MB (adjustable up to 10240 MB)
     events:
       - httpApi:
           path: /{proxy+}
