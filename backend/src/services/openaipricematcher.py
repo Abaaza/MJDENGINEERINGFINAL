@@ -7,6 +7,7 @@ from openpyxl import load_workbook
 import os
 import threading
 from datetime import datetime
+import re
 
 # --- CONFIGURABLE CONSTANTS ---
 EMBEDDING_MODEL = "text-embedding-3-large"
@@ -277,10 +278,19 @@ def fill_inquiry_rates(wb_inq, items_to_fill, pricelist_descs, pricelist_rates, 
     inquiry_embeds = inquiry_embeds / np.linalg.norm(inquiry_embeds, axis=1, keepdims=True)
     logger_fn("Calculating similarity scores...")
     similarity_matrix = inquiry_embeds.dot(pricelist_embeds.T)
+
+    token_pattern = re.compile(r"\b[a-zA-Z0-9]+\b")
+    price_tokens = [set(token_pattern.findall(t)) for t in pricelist_descs]
     for idx, (rate_cell, desc_text) in enumerate(items_to_fill):
         scores = similarity_matrix[idx]
-        best_idx = np.argmax(scores)
-        best_score = scores[best_idx]
+        query_tokens = set(token_pattern.findall(desc_text))
+        j_scores = np.array([
+            len(query_tokens & pt) / len(query_tokens | pt) if (query_tokens or pt) else 0
+            for pt in price_tokens
+        ])
+        combined = 0.85 * scores + 0.15 * j_scores
+        best_idx = np.argmax(combined)
+        best_score = combined[best_idx]
         best_desc = pricelist_descs[best_idx]
         best_rate = pricelist_rates[best_idx]
         sheet = rate_cell.parent
