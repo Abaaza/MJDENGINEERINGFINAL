@@ -5,6 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 import { getPriceItems, searchPriceItems, updatePriceItem, PriceItem } from "@/lib/api"
 import { useAuth } from "@/contexts/auth-context"
 
@@ -21,6 +29,7 @@ export function PriceListModule() {
   const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(false)
   const [editing, setEditing] = useState<Record<string, Partial<PriceItemExt>>>({})
+  const [page, setPage] = useState(1)
   const { token } = useAuth()
 
   const load = async (term: string) => {
@@ -38,6 +47,7 @@ export function PriceListModule() {
 
   useEffect(() => {
     load(search)
+    setPage(1)
   }, [search, token])
 
   const handleChange = (id: string, field: keyof PriceItemExt, value: any) => {
@@ -76,6 +86,11 @@ export function PriceListModule() {
     }
   }
 
+  const maxPages = 4
+  const pageSize = Math.max(1, Math.ceil(items.length / maxPages))
+  const pageCount = Math.ceil(items.length / pageSize)
+  const paginatedItems = items.slice((page - 1) * pageSize, page * pageSize)
+
   return (
     <Card className="glass-effect border-white/10">
       <CardHeader>
@@ -106,7 +121,7 @@ export function PriceListModule() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map(item => {
+                {paginatedItems.map(item => {
                   const values = editing[item._id ?? ""] || {}
                   return (
                     <TableRow key={item._id} className="border-b border-white/10">
@@ -171,6 +186,32 @@ export function PriceListModule() {
               </TableBody>
             </Table>
           </div>
+        )}
+        {pageCount > 1 && (
+          <Pagination className="pt-2">
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious href="#" onClick={() => setPage(p => Math.max(1, p - 1))} />
+              </PaginationItem>
+              {Array.from({ length: pageCount }, (_, i) => (
+                <PaginationItem key={i}>
+                  <PaginationLink
+                    href="#"
+                    isActive={page === i + 1}
+                    onClick={e => {
+                      e.preventDefault()
+                      setPage(i + 1)
+                    }}
+                  >
+                    {i + 1}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+              <PaginationItem>
+                <PaginationNext href="#" onClick={() => setPage(p => Math.min(pageCount, p + 1))} />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         )}
       </CardContent>
     </Card>
