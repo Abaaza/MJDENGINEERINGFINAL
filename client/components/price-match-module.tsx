@@ -202,7 +202,7 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
     )
   })
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!results) return
     if (!projectName.trim() || !clientName.trim()) {
       alert('Project and client name are required')
