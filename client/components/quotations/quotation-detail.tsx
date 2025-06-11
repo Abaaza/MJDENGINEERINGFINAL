@@ -44,8 +44,8 @@ export const QuotationDetail = memo(function QuotationDetail({ quotationId }: Qu
   const [items, setItems] = useState<QuotationItem[]>([])
 
   useEffect(() => {
-    const q = getQuotation(quotationId)
-    if (q) {
+    getQuotation(quotationId).then(q => {
+      if (!q) return
       setQuotation({
         id: q.id,
         client: q.client,
@@ -58,7 +58,7 @@ export const QuotationDetail = memo(function QuotationDetail({ quotationId }: Qu
         timeline: [{ status: 'created', date: q.date, description: 'Quotation created' }]
       })
       setItems(q.items)
-    }
+    })
   }, [quotationId])
 
   if (!quotation) return <p className="text-white">Quotation not found</p>
@@ -91,10 +91,10 @@ export const QuotationDetail = memo(function QuotationDetail({ quotationId }: Qu
           </Button>
           <Button
             variant="outline"
-            onClick={() => {
+            onClick={async () => {
               if (isEditing && quotation) {
                 const value = items.reduce((s, i) => s + i.total, 0)
-                saveQuotation({ ...quotation, items, value })
+                await saveQuotation({ ...quotation, items, value })
                 setQuotation({ ...quotation, items, value })
               }
               setIsEditing(!isEditing)
