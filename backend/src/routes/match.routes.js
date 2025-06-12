@@ -10,6 +10,8 @@ import {
 import {
   cohereMatchFromFiles,
   cohereMatchFromDb,
+  cohereMatchFromFilesV2,
+  cohereMatchFromDbV2,
 } from "../services/cohereService.js";
 import { matchFromFiles } from "../services/matchService.js";
 import { fileURLToPath } from "url";
@@ -76,7 +78,16 @@ router.post("/", upload.single("file"), async (req, res) => {
   const run = async () => {
     let results;
     const useDb = !!process.env.CONNECTION_STRING;
-    if (version === 'v1') {
+    if (version === 'v2') {
+      if (cohereKey) {
+        console.log('Calling Cohere v2 matcher');
+        results = await (useDb
+          ? cohereMatchFromDbV2(req.file.buffer, cohereKey)
+          : cohereMatchFromFilesV2(PRICE_FILE, req.file.buffer, cohereKey));
+      } else {
+        results = matchFromFiles(PRICE_FILE, req.file.buffer);
+      }
+    } else if (version === 'v1') {
       if (cohereKey) {
         console.log('Calling Cohere matcher');
         results = await (useDb

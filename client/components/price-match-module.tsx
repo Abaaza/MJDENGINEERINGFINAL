@@ -59,7 +59,7 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
   const [discount, setDiscount] = useState(0)
   const [projectName, setProjectName] = useState("")
   const [clientName, setClientName] = useState("")
-  const [version, setVersion] = useState<'v0' | 'v1'>('v0')
+  const [version, setVersion] = useState<'v0' | 'v1' | 'v2'>('v0')
   const [page, setPage] = useState(0)
   const pageSize = 100
   const [inputsCollapsed, setInputsCollapsed] = useState(false)
@@ -418,13 +418,14 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
               onChange={e => setClientName(e.target.value)}
               className="bg-gray-800/20 border-white/10"
             />
-            <Select value={version} onValueChange={val => setVersion(val as 'v0' | 'v1')}>
+            <Select value={version} onValueChange={val => setVersion(val as 'v0' | 'v1' | 'v2')}>
               <SelectTrigger className="w-24 bg-gray-800/20 border-white/10">
                 <SelectValue placeholder="Version" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="v0">v0</SelectItem>
                 <SelectItem value="v1">v1</SelectItem>
+                <SelectItem value="v2">v2</SelectItem>
               </SelectContent>
             </Select>
             <Input
