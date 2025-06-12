@@ -104,7 +104,7 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
   const endIndex = results ? Math.min(results.length, startIndex + pageSize) : 0
   const pageCount = results ? Math.ceil(results.length / pageSize) : 0
 
-  const texts = ["text1", "text2", "text3"]
+  const texts = [""]
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null
