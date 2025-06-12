@@ -2,6 +2,7 @@
 
 import { useState, useRef, memo, useEffect } from "react"
 import * as XLSX from "xlsx"
+import ExcelJS from "exceljs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -37,6 +38,7 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
   const { token } = useAuth()
   const router = useRouter()
   const [file, setFile] = useState<File | null>(null)
+  const [fileData, setFileData] = useState<ArrayBuffer | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [results, setResults] = useState<Row[] | null>(null)
   const [loading, setLoading] = useState(false)
@@ -65,6 +67,7 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
       reader.onload = evt => {
         const data = evt.target?.result
         if (!data) return
+        setFileData(data as ArrayBuffer)
         const wb = XLSX.read(data, { type: 'array' })
         const ws = wb.Sheets[wb.SheetNames[0]]
         const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
@@ -312,40 +315,28 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
     setResults(results.filter((_, i) => i !== index))
   }
 
-  const exportExcel = () => {
-    if (!results || !workbook || !colIdx) return
-    const outWb = XLSX.utils.book_new()
-    workbook.SheetNames.forEach((name, idx) => {
-      const ws = workbook.Sheets[name]
-      if (idx === 0) {
-        const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
-        results.forEach((r, i) => {
-          const rowIdx = headerIndex + 1 + i
-          const base = rows[rowIdx] ? [...rows[rowIdx]] : Array(headerRow.length).fill('')
-          base[colIdx.desc] = r.inputDescription
-          base[colIdx.qty] = r.quantity
-          const sel = typeof r.selected === 'number' ? r.matches[r.selected] : null
-          if (colIdx.unit >= 0) base[colIdx.unit] = sel?.unit || ''
-          if (colIdx.rate >= 0) base[colIdx.rate] = r.rateOverride ?? sel?.unitRate ?? ''
-          rows[rowIdx] = base
-        })
-        const newWs = XLSX.utils.aoa_to_sheet(rows)
-        // preserve basic sheet settings
-        newWs['!cols'] = ws['!cols']
-        newWs['!rows'] = ws['!rows']
-        newWs['!merges'] = ws['!merges']
-        // copy existing cell styles when possible
-        Object.keys(ws).forEach(addr => {
-          if (!addr.startsWith('!') && newWs[addr] && ws[addr]?.s) {
-            newWs[addr].s = ws[addr].s
-          }
-        })
-        XLSX.utils.book_append_sheet(outWb, newWs, name)
-      } else {
-        XLSX.utils.book_append_sheet(outWb, ws, name)
-      }
+  const exportExcel = async () => {
+    if (!results || !fileData || !colIdx) return
+    const wb = new ExcelJS.Workbook()
+    await wb.xlsx.load(fileData)
+    const ws = wb.worksheets[0]
+    results.forEach((r, i) => {
+      const rowNum = headerIndex + 2 + i
+      const row = ws.getRow(rowNum)
+      if (colIdx.desc >= 0) row.getCell(colIdx.desc + 1).value = r.inputDescription
+      if (colIdx.qty >= 0) row.getCell(colIdx.qty + 1).value = r.quantity
+      const sel = typeof r.selected === 'number' ? r.matches[r.selected] : null
+      if (colIdx.unit >= 0) row.getCell(colIdx.unit + 1).value = sel?.unit || ''
+      if (colIdx.rate >= 0) row.getCell(colIdx.rate + 1).value = r.rateOverride ?? sel?.unitRate ?? ''
+      row.commit()
     })
-    XLSX.writeFile(outWb, 'price_match_output.xlsx', { cellStyles: true })
+    const buf = await wb.xlsx.writeBuffer()
+    const url = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'price_match_output.xlsx'
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   const handleSave = async () => {

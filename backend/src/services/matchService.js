@@ -243,7 +243,8 @@ export function parseInputBuffer(buffer) {
   const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
   const hdr = detectHeader(rows);
   if (!hdr) return [];
-  return parseRows(rows, hdr.index);
+  const items = parseRows(rows, hdr.index);
+  return items.filter(it => it.qty > 0);
 }
 
 export function matchItems(inputItems, priceItems, limit = 4, candidateLimit = 8) {
