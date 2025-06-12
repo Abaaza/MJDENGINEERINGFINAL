@@ -330,12 +330,22 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
           rows[rowIdx] = base
         })
         const newWs = XLSX.utils.aoa_to_sheet(rows)
+        // preserve basic sheet settings
+        newWs['!cols'] = ws['!cols']
+        newWs['!rows'] = ws['!rows']
+        newWs['!merges'] = ws['!merges']
+        // copy existing cell styles when possible
+        Object.keys(ws).forEach(addr => {
+          if (!addr.startsWith('!') && newWs[addr] && ws[addr]?.s) {
+            newWs[addr].s = ws[addr].s
+          }
+        })
         XLSX.utils.book_append_sheet(outWb, newWs, name)
       } else {
         XLSX.utils.book_append_sheet(outWb, ws, name)
       }
     })
-    XLSX.writeFile(outWb, 'price_match_output.xlsx')
+    XLSX.writeFile(outWb, 'price_match_output.xlsx', { cellStyles: true })
   }
 
   const handleSave = async () => {
