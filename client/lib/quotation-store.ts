@@ -81,3 +81,15 @@ export async function getQuotation(id: string): Promise<Quotation | undefined> {
   return all.find(q => q.id === id)
 }
 
+export async function deleteQuotation(id: string) {
+  try {
+    await fetch(`${base}/api/quotations/${id}`, { method: 'DELETE' })
+  } catch {
+    // ignore
+  }
+  if (typeof localStorage === 'undefined') return
+  const all = await loadQuotations()
+  const updated = all.filter(q => q.id !== id)
+  localStorage.setItem(KEY, JSON.stringify(updated))
+}
+

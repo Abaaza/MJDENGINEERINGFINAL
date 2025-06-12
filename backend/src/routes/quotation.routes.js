@@ -47,4 +47,19 @@ router.post('/', async (req, res) => {
   res.status(201).json(data);
 });
 
+router.delete('/:id', async (req, res) => {
+  const { id } = req.params;
+
+  if (process.env.CONNECTION_STRING) {
+    const doc = await Quotation.findOneAndDelete({ id });
+    if (!doc) return res.status(404).json({ message: 'Not found' });
+    return res.json({ message: 'deleted' });
+  }
+
+  const idx = sampleQuotations.findIndex(q => q.id === id);
+  if (idx === -1) return res.status(404).json({ message: 'Not found' });
+  sampleQuotations.splice(idx, 1);
+  res.json({ message: 'deleted' });
+});
+
 export default router;
