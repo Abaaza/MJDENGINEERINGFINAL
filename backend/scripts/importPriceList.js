@@ -74,6 +74,15 @@ async function main() {
               .filter(Boolean)
           : undefined,
     };
+    item.searchText = [
+      item.description,
+      item.category,
+      item.subCategory,
+      ...(item.keywords || []),
+      ...(item.phrases || [])
+    ]
+      .filter(Boolean)
+      .join(' ');
     items.push(item);
   }
 

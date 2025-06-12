@@ -108,6 +108,7 @@ export interface PriceItem {
   rate?: number;
   keywords?: string[];
   phrases?: string[];
+  searchText?: string;
 }
 
 export async function searchPriceItems(
