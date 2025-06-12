@@ -33,6 +33,7 @@ export async function priceMatch(
   file: File,
   keys: { openaiKey?: string; cohereKey?: string; geminiKey?: string },
   token: string,
+  version: 'v0' | 'v1',
   asyncMode = false,
 ) {
   const form = new FormData();
@@ -40,6 +41,7 @@ export async function priceMatch(
   if (keys.openaiKey) form.append("openaiKey", keys.openaiKey);
   if (keys.cohereKey) form.append("cohereKey", keys.cohereKey);
   if (keys.geminiKey) form.append("geminiKey", keys.geminiKey);
+  form.append('version', version);
   const url = asyncMode ? `${base}/api/match?async=1` : `${base}/api/match`;
   const res = await fetch(url, {
     method: "POST",
