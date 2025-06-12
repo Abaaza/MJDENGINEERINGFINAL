@@ -270,6 +270,15 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
   })
 
   const [autoQuoteId, setAutoQuoteId] = useState<string | null>(null)
+  const saveTimer = useRef<NodeJS.Timeout | null>(null)
+
+  useEffect(() => {
+    if (!autoQuoteId || !results) return
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    saveTimer.current = setTimeout(() => {
+      saveQuotationData(results, autoQuoteId)
+    }, 1000)
+  }, [results, discount, autoQuoteId])
 
   const saveQuotationData = async (rows: Row[], id?: string) => {
     const items = rows.map((r, idx) => {

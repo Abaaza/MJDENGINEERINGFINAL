@@ -7,7 +7,6 @@ import connect from './config/db.js'; // async connection function
 await connect();
 
 import authRoutes from './routes/auth.routes.js';
-import projectRoutes from './routes/project.routes.js';
 import boqRoutes from './routes/boq.routes.js';
 import matchRoutes from './routes/match.routes.js';
 import priceRoutes from './routes/price.routes.js';
@@ -29,7 +28,6 @@ app.get('/', (req, res) => {
 
 // ✅ API Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/projects', auth, projectRoutes);
 app.use('/api/boq', auth, boqRoutes);
 app.use('/api/match', auth, matchRoutes);
 app.use('/api/prices', auth, priceRoutes);
