@@ -23,7 +23,13 @@ const base = process.env.NEXT_PUBLIC_API_URL ?? ''
 export async function loadQuotations(): Promise<Quotation[]> {
   try {
     const res = await fetch(`${base}/api/quotations`, { cache: 'no-store' })
-    if (res.ok) return (await res.json()) as Quotation[]
+    if (res.ok) {
+      const data = (await res.json()) as Quotation[]
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(KEY, JSON.stringify(data))
+      }
+      return data
+    }
   } catch {
     // ignore network errors
   }
@@ -57,7 +63,17 @@ export async function saveQuotation(q: Quotation) {
 export async function getQuotation(id: string): Promise<Quotation | undefined> {
   try {
     const res = await fetch(`${base}/api/quotations/${id}`, { cache: 'no-store' })
-    if (res.ok) return (await res.json()) as Quotation
+    if (res.ok) {
+      const q = (await res.json()) as Quotation
+      if (typeof localStorage !== 'undefined') {
+        const all = await loadQuotations()
+        const idx = all.findIndex(i => i.id === q.id)
+        if (idx >= 0) all[idx] = q
+        else all.push(q)
+        localStorage.setItem(KEY, JSON.stringify(all))
+      }
+      return q
+    }
   } catch {
     // ignore
   }

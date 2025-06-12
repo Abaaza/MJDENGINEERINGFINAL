@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Edit, Save, X, Plus } from "lucide-react"
+import { Edit, Save, X, Plus, Trash } from "lucide-react"
 
 interface EditableTableProps {
   isEditing: boolean
@@ -67,6 +67,14 @@ export const EditableTable = memo(function EditableTable({ isEditing, initialIte
     onItemsChange?.(items)
   }
 
+  const handleDelete = (id: number) => {
+    setItems(prev => {
+      const updated = prev.filter(it => it.id !== id)
+      onItemsChange?.(updated)
+      return updated
+    })
+  }
+
   const addNewRow = () => {
     const newItem: TableItem = {
       id: items.length + 1,
@@ -107,6 +115,7 @@ export const EditableTable = memo(function EditableTable({ isEditing, initialIte
                 <TableHead className="text-gray-400">Unit Price</TableHead>
                 <TableHead className="text-gray-400">Total</TableHead>
                 {isEditing && <TableHead className="text-gray-400">Actions</TableHead>}
+                {isEditing && <TableHead className="text-gray-400">Delete</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -175,6 +184,18 @@ export const EditableTable = memo(function EditableTable({ isEditing, initialIte
                           </Button>
                         )}
                       </div>
+                    </TableCell>
+                  )}
+                  {isEditing && (
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        type="button"
+                        onClick={() => handleDelete(item.id)}
+                        className="bg-red-500/20 hover:bg-red-500/30 text-red-500 border-red-500/30 ripple"
+                      >
+                        <Trash className="h-3 w-3" />
+                      </Button>
                     </TableCell>
                   )}
                 </TableRow>

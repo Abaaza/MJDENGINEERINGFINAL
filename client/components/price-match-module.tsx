@@ -375,13 +375,6 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
       }
     })
     const value = items.reduce((s, i) => s + i.total, 0)
-    const blob = new Blob([JSON.stringify({ discount, items }, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'quotation.json'
-    a.click()
-    URL.revokeObjectURL(url)
     alert(`Quotation saved. Total: ${formatCurrency(value)}`)
     router.push(`/quotations/${id}`)
   }
