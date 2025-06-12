@@ -33,7 +33,7 @@ export async function priceMatch(
   file: File,
   keys: { openaiKey?: string; cohereKey?: string; geminiKey?: string },
   token: string,
-  version: 'v0' | 'v1',
+  version: 'v0' | 'v1' | 'v2',
   asyncMode = false,
 ) {
   const form = new FormData();
