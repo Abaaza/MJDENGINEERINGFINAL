@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Progress } from "@/components/ui/progress"
 import { priceMatch, searchPriceItems, PriceItem } from "@/lib/api"
 import { saveQuotation } from "@/lib/quotation-store"
 import { Trash } from "lucide-react"
@@ -40,6 +41,8 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
   const [results, setResults] = useState<Row[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [logs, setLogs] = useState<string[]>([])
+  const [progress, setProgress] = useState(0)
+  const [textIndex, setTextIndex] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const logSrc = useRef<EventSource | null>(null)
   const [discountInput, setDiscountInput] = useState(0)
@@ -54,9 +57,6 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
   const [headerIndex, setHeaderIndex] = useState(0)
   const [colIdx, setColIdx] = useState<{desc:number; qty:number; unit:number; rate:number} | null>(null)
 
-  useEffect(() => {
-    fileInputRef.current?.click()
-  }, [])
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const f = e.target.files[0]
@@ -91,6 +91,23 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
   const startIndex = results ? page * pageSize : 0
   const endIndex = results ? Math.min(results.length, startIndex + pageSize) : 0
   const pageCount = results ? Math.ceil(results.length / pageSize) : 0
+
+  const texts = ["text1", "text2", "text3"]
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null
+    if (loading && logs.length === 0) {
+      interval = setInterval(() => {
+        setProgress(p => (p >= 100 ? 0 : p + 5))
+        setTextIndex(i => (i + 1) % texts.length)
+      }, 500)
+    } else {
+      setProgress(0)
+    }
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [loading, logs])
 
   const runMatch = async () => {
     if (!file) return
@@ -380,7 +397,13 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
         <Button type="button" onClick={runMatch} disabled={!file || loading} className="bg-gradient-to-r from-[#00D4FF] to-[#00FF88] text-black font-semibold">
           {loading ? "Matching..." : "Start Matching"}
         </Button>
-        {(loading || logs.length > 0) && (
+        {loading && logs.length === 0 && (
+          <div className="space-y-2 w-full">
+            <Progress value={progress} />
+            <p className="text-xs text-gray-300">{texts[textIndex]}</p>
+          </div>
+        )}
+        {logs.length > 0 && (
           <pre className="bg-black/30 text-green-400 p-2 rounded max-h-40 overflow-auto text-xs whitespace-pre-wrap">
             {logs.join("\n")}
           </pre>
