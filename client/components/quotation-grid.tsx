@@ -6,11 +6,11 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Eye, Edit, Download, Filter, Search } from "lucide-react"
+import { Eye, Edit, Download, Filter, Search, Trash } from "lucide-react"
 import Link from "next/link"
 import { useMobileOptimization } from "@/components/mobile-optimization-provider"
 import { cn, formatCurrency, formatDate } from "@/lib/utils"
-import { loadQuotations } from "@/lib/quotation-store"
+import { loadQuotations, deleteQuotation } from "@/lib/quotation-store"
 
 interface Quotation {
   id: string
@@ -95,6 +95,14 @@ export function QuotationGrid() {
         {status.replace("-", " ").toUpperCase()}
       </Badge>
     )
+  }
+
+  const handleDelete = async (id: string) => {
+    const confirm = window.confirm('Delete this quotation?')
+    if (!confirm) return
+    await deleteQuotation(id)
+    setQuotations(prev => prev.filter(q => q.id !== id))
+    setVisibleQuotations(prev => prev.filter(q => q.id !== id))
   }
 
   return (
@@ -234,6 +242,14 @@ export function QuotationGrid() {
                         className="border-white/20 hover:bg-white/10 ripple mobile-touch"
                       >
                         <Download className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDelete(quotation.id)}
+                        className="border-red-500/30 text-red-500 hover:bg-red-500/20 ripple mobile-touch"
+                      >
+                        <Trash className="h-4 w-4" />
                       </Button>
                     </div>
                   </CardContent>
