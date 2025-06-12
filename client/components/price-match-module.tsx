@@ -7,6 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select"
 import { Progress } from "@/components/ui/progress"
 import { priceMatch, searchPriceItems, PriceItem } from "@/lib/api"
 import { saveQuotation } from "@/lib/quotation-store"
@@ -43,6 +50,7 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
   const [results, setResults] = useState<Row[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [logs, setLogs] = useState<string[]>([])
+  const logRef = useRef<HTMLPreElement | null>(null)
   const [progress, setProgress] = useState(0)
   const [textIndex, setTextIndex] = useState(0)
   const [error, setError] = useState<string | null>(null)
@@ -100,7 +108,7 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null
-    if (loading && logs.length === 0) {
+    if (loading) {
       interval = setInterval(() => {
         setProgress(p => (p >= 100 ? 0 : p + 5))
         setTextIndex(i => (i + 1) % texts.length)
@@ -111,7 +119,13 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
     return () => {
       if (interval) clearInterval(interval)
     }
-  }, [loading, logs])
+  }, [loading])
+
+  useEffect(() => {
+    if (logRef.current) {
+      logRef.current.scrollTop = logRef.current.scrollHeight
+    }
+  }, [logs])
 
   const runMatch = async () => {
     if (!file) return
@@ -404,17 +418,15 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
             />
             <div className="space-y-1">
               <span className="text-white text-sm">Version</span>
-              <RadioGroup value={version} onValueChange={val => setVersion(val as 'v0' | 'v1')}
-                className="flex space-x-4">
-                <div className="flex items-center space-x-1">
-                  <RadioGroupItem id="ver-v0" value="v0" />
-                  <label htmlFor="ver-v0" className="text-xs">v0</label>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <RadioGroupItem id="ver-v1" value="v1" />
-                  <label htmlFor="ver-v1" className="text-xs">v1</label>
-                </div>
-              </RadioGroup>
+              <Select value={version} onValueChange={val => setVersion(val as 'v0' | 'v1')}>
+                <SelectTrigger className="w-24 bg-gray-800/20 border-white/10">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="v0">v0</SelectItem>
+                  <SelectItem value="v1">v1</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <Input
               type="file"
@@ -428,14 +440,17 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
         <Button type="button" onClick={runMatch} disabled={!file || loading} className="bg-gradient-to-r from-[#00D4FF] to-[#00FF88] text-black font-semibold">
           {loading ? "Matching..." : "Start Matching"}
         </Button>
-        {loading && logs.length === 0 && (
+        {loading && (
           <div className="space-y-2 w-full">
             <Progress value={progress} />
             <p className="text-xs text-gray-300">{texts[textIndex]}</p>
           </div>
         )}
         {logs.length > 0 && (
-          <pre className="bg-black/30 text-green-400 p-2 rounded max-h-40 overflow-auto text-xs whitespace-pre-wrap">
+          <pre
+            ref={logRef}
+            className="bg-black/30 text-green-400 p-2 rounded max-h-40 overflow-auto text-xs whitespace-pre-wrap"
+          >
             {logs.join("\n")}
           </pre>
         )}
