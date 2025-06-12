@@ -68,48 +68,60 @@ router.post("/", upload.single("file"), async (req, res) => {
     name: req.file.originalname,
     size: req.file.size,
   });
-  const { openaiKey, cohereKey } = req.body;
+  const { openaiKey, cohereKey, version = 'v0' } = req.body;
   console.log("OpenAI key provided:", !!openaiKey);
   console.log("Cohere key provided:", !!cohereKey);
+  console.log("Version selected:", version);
 
   const run = async () => {
     let results;
     const useDb = !!process.env.CONNECTION_STRING;
-    if (openaiKey && cohereKey) {
-      console.log("Calling OpenAI matcher");
-      const openaiResults = await (useDb
-        ? openAiMatchFromDb(req.file.buffer, openaiKey)
-        : openAiMatchFromFiles(PRICE_FILE, req.file.buffer, openaiKey));
-      console.log("Calling Cohere matcher");
-      const cohereResults = await (useDb
-        ? cohereMatchFromDb(req.file.buffer, cohereKey)
-        : cohereMatchFromFiles(PRICE_FILE, req.file.buffer, cohereKey));
-      results = openaiResults.map((o, idx) => {
-        const c = cohereResults[idx] || { matches: [] };
-        const openaiBest = o.matches[0];
-        const cohereBest = (c.matches || [])[0];
-        return {
-          inputDescription: o.inputDescription,
-          quantity: o.quantity,
-          matches: [openaiBest, cohereBest].filter(Boolean),
-        };
-      });
-    } else if (openaiKey) {
-      console.log("Calling OpenAI matcher");
-      results = await (useDb
-        ? openAiMatchFromDb(req.file.buffer, openaiKey)
-        : openAiMatchFromFiles(PRICE_FILE, req.file.buffer, openaiKey));
-    } else if (cohereKey) {
-      console.log("Calling Cohere matcher");
-      results = await (useDb
-        ? cohereMatchFromDb(req.file.buffer, cohereKey)
-        : cohereMatchFromFiles(PRICE_FILE, req.file.buffer, cohereKey));
+    if (version === 'v1') {
+      if (cohereKey) {
+        console.log('Calling Cohere matcher');
+        results = await (useDb
+          ? cohereMatchFromDb(req.file.buffer, cohereKey)
+          : cohereMatchFromFiles(PRICE_FILE, req.file.buffer, cohereKey));
+      } else {
+        results = matchFromFiles(PRICE_FILE, req.file.buffer);
+      }
     } else {
-      // Fallback to built-in matcher when no external API key is provided
-      results = matchFromFiles(PRICE_FILE, req.file.buffer);
+      if (openaiKey && cohereKey) {
+        console.log('Calling OpenAI matcher');
+        const openaiResults = await (useDb
+          ? openAiMatchFromDb(req.file.buffer, openaiKey)
+          : openAiMatchFromFiles(PRICE_FILE, req.file.buffer, openaiKey));
+        console.log('Calling Cohere matcher');
+        const cohereResults = await (useDb
+          ? cohereMatchFromDb(req.file.buffer, cohereKey)
+          : cohereMatchFromFiles(PRICE_FILE, req.file.buffer, cohereKey));
+        results = openaiResults.map((o, idx) => {
+          const c = cohereResults[idx] || { matches: [] };
+          const openaiBest = o.matches[0];
+          const cohereBest = (c.matches || [])[0];
+          return {
+            inputDescription: o.inputDescription,
+            quantity: o.quantity,
+            matches: [openaiBest, cohereBest].filter(Boolean),
+          };
+        });
+      } else if (openaiKey) {
+        console.log('Calling OpenAI matcher');
+        results = await (useDb
+          ? openAiMatchFromDb(req.file.buffer, openaiKey)
+          : openAiMatchFromFiles(PRICE_FILE, req.file.buffer, openaiKey));
+      } else if (cohereKey) {
+        console.log('Calling Cohere matcher');
+        results = await (useDb
+          ? cohereMatchFromDb(req.file.buffer, cohereKey)
+          : cohereMatchFromFiles(PRICE_FILE, req.file.buffer, cohereKey));
+      } else {
+        // Fallback to built-in matcher when no external API key is provided
+        results = matchFromFiles(PRICE_FILE, req.file.buffer);
+      }
     }
-    console.log("Price match results:", results.length);
-    matchEmitter.emit("log", "DONE");
+    console.log('Price match results:', results.length);
+    matchEmitter.emit('log', 'DONE');
     return results;
   };
 

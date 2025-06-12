@@ -51,6 +51,7 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
   const [discount, setDiscount] = useState(0)
   const [projectName, setProjectName] = useState("")
   const [clientName, setClientName] = useState("")
+  const [version, setVersion] = useState<'v0' | 'v1'>('v0')
   const [page, setPage] = useState(0)
   const pageSize = 100
   const [inputsCollapsed, setInputsCollapsed] = useState(false)
@@ -130,7 +131,7 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
       }
     }
     try {
-      const data = await priceMatch(file, { openaiKey, cohereKey, geminiKey }, token)
+      const data = await priceMatch(file, { openaiKey, cohereKey, geminiKey }, token, version)
       const rows: Row[] = data.map((r: MatchResult) => ({
         ...r,
         selected: r.matches.length ? 0 : 'manual',
@@ -401,6 +402,20 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
               onChange={e => setClientName(e.target.value)}
               className="bg-gray-800/20 border-white/10"
             />
+            <div className="space-y-1">
+              <span className="text-white text-sm">Version</span>
+              <RadioGroup value={version} onValueChange={val => setVersion(val as 'v0' | 'v1')}
+                className="flex space-x-4">
+                <div className="flex items-center space-x-1">
+                  <RadioGroupItem id="ver-v0" value="v0" />
+                  <label htmlFor="ver-v0" className="text-xs">v0</label>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <RadioGroupItem id="ver-v1" value="v1" />
+                  <label htmlFor="ver-v1" className="text-xs">v1</label>
+                </div>
+              </RadioGroup>
+            </div>
             <Input
               type="file"
               accept=".xlsx,.xls"
