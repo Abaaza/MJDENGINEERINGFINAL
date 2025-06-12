@@ -70,7 +70,17 @@ router.get('/search', async (req, res) => {
 // Create a new price item
 router.post('/', async (req, res) => {
   try {
-    const doc = await PriceItem.create(req.body);
+    const data = { ...req.body };
+    data.searchText = [
+      data.description,
+      data.category,
+      data.subCategory,
+      ...(data.keywords || []),
+      ...(data.phrases || [])
+    ]
+      .filter(Boolean)
+      .join(' ');
+    const doc = await PriceItem.create(data);
     res.status(201).json(doc);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -81,7 +91,23 @@ router.post('/', async (req, res) => {
 router.patch('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const doc = await PriceItem.findByIdAndUpdate(id, req.body, { new: true });
+    const existing = await PriceItem.findById(id);
+    if (!existing) return res.status(404).json({ message: 'Not found' });
+    const data = { ...existing.toObject(), ...req.body };
+    const searchText = [
+      data.description,
+      data.category,
+      data.subCategory,
+      ...(data.keywords || []),
+      ...(data.phrases || [])
+    ]
+      .filter(Boolean)
+      .join(' ');
+    const doc = await PriceItem.findByIdAndUpdate(
+      id,
+      { ...req.body, searchText },
+      { new: true }
+    );
     if (!doc) return res.status(404).json({ message: 'Not found' });
     res.json(doc);
   } catch (err) {
