@@ -207,8 +207,8 @@ def load_pricelist_from_db(logger_fn):
     col = db["priceitems"]
     descriptions = []
     rates = []
-    for doc in col.find({"rate": {"$ne": None}, "unit": {"$exists": True, "$ne": ""}}, {"description":1, "rate":1}):
-        desc = doc.get("description")
+    for doc in col.find({"rate": {"$ne": None}, "unit": {"$exists": True, "$ne": ""}}, {"fullContext":1, "rate":1}):
+        desc = doc.get("fullContext")
         rate = doc.get("rate")
         if desc and rate is not None:
             descriptions.append(preprocess_text(desc))
