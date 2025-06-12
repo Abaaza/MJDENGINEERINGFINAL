@@ -18,6 +18,7 @@ router.get('/', async (req, res) => {
   }
 
   const q = String(req.query.q || '').trim();
+  const categoriesParam = req.query.categories;
   const filter = {};
   if (q) {
     const regex = new RegExp(q, 'i');
@@ -32,6 +33,13 @@ router.get('/', async (req, res) => {
         { phrases: regex },
       ],
     });
+  }
+  if (categoriesParam) {
+    const list = Array.isArray(categoriesParam)
+      ? categoriesParam
+      : String(categoriesParam).split(',');
+    const cats = list.map(c => c.trim()).filter(Boolean);
+    if (cats.length) Object.assign(filter, { category: { $in: cats } });
   }
 
   const [items, total] = await Promise.all([
@@ -122,6 +130,16 @@ router.delete('/:id', async (req, res) => {
     const doc = await PriceItem.findByIdAndDelete(id);
     if (!doc) return res.status(404).json({ message: 'Not found' });
     res.json({ message: 'Deleted' });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+// List distinct categories
+router.get('/categories/list', async (_req, res) => {
+  try {
+    const cats = await PriceItem.distinct('category', { category: { $ne: null } });
+    res.json(cats.filter(Boolean).sort());
   } catch (err) {
     res.status(400).json({ message: err.message });
   }

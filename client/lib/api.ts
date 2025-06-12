@@ -130,13 +130,16 @@ export interface PaginatedResult<T> {
 
 export async function getPriceItems(
   token: string,
-  opts: { page?: number; limit?: number; sort?: string; q?: string } = {},
+  opts: { page?: number; limit?: number; sort?: string; q?: string; categories?: string[] } = {},
 ): Promise<PaginatedResult<PriceItem>> {
   const params = new URLSearchParams();
   if (opts.page) params.append("page", String(opts.page));
   if (opts.limit) params.append("limit", String(opts.limit));
   if (opts.sort) params.append("sort", opts.sort);
   if (opts.q) params.append("q", opts.q);
+  if (opts.categories && opts.categories.length) {
+    params.append('categories', opts.categories.join(','));
+  }
   const res = await fetch(`${base}/api/prices?${params.toString()}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -186,4 +189,12 @@ export async function deletePriceItem(
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) throw new Error("Delete failed");
+}
+
+export async function getCategories(token: string): Promise<string[]> {
+  const res = await fetch(`${base}/api/prices/categories/list`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Failed to fetch categories');
+  return res.json();
 }
