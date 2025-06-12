@@ -3,6 +3,7 @@ from tkinter import filedialog, messagebox, scrolledtext
 import cohere
 import numpy as np
 from openpyxl import load_workbook
+from pymongo import MongoClient
 import os
 import threading
 from datetime import datetime
@@ -19,7 +20,6 @@ class PricelistMatcherApp:
         self.root.title("Pricelist Matching Application (Cohere Embed v4.0)")
         self.root.geometry("670x500")
 
-        self.pricelist_path = tk.StringVar()
         self.inquiry_path   = tk.StringVar()
         self.api_key_var    = tk.StringVar()
         self.output_folder  = tk.StringVar()
@@ -31,51 +31,41 @@ class PricelistMatcherApp:
         frm = tk.Frame(self.root, padx=10, pady=10)
         frm.pack(fill=tk.BOTH, expand=True)
 
-        # Pricelist file chooser
-        tk.Label(frm, text="Pricelist Excel:").grid(row=0, column=0, sticky="e")
-        tk.Entry(frm, textvariable=self.pricelist_path, width=45).grid(row=0, column=1, padx=5)
-        tk.Button(frm, text="Browse...",
-                  command=lambda: self.pricelist_path.set(
-                      filedialog.askopenfilename(
-                          title="Select Pricelist File",
-                          filetypes=[("Excel files", "*.xlsx *.xls")],
-                      )
-                  )).grid(row=0, column=2, padx=5, pady=2)
-
-        # Inquiry file chooser
-        tk.Label(frm, text="Inquiry Excel:").grid(row=1, column=0, sticky="e")
-        tk.Entry(frm, textvariable=self.inquiry_path, width=45).grid(row=1, column=1, padx=5)
+        # Price list now loaded from the database, no file selection
+        tk.Label(frm, text="Inquiry Excel:").grid(row=0, column=0, sticky="e")
+        tk.Entry(frm, textvariable=self.inquiry_path, width=45).grid(row=0, column=1, padx=5)
         tk.Button(frm, text="Browse...",
                   command=lambda: self.inquiry_path.set(
                       filedialog.askopenfilename(
                           title="Select Inquiry File",
                           filetypes=[("Excel files", "*.xlsx *.xls")],
                       )
-                  )).grid(row=1, column=2, padx=5, pady=2)
+                  )).grid(row=0, column=2, padx=5, pady=2)
+
 
         # Cohere API key entry
-        tk.Label(frm, text="Cohere API Key:").grid(row=2, column=0, sticky="e")
-        tk.Entry(frm, textvariable=self.api_key_var, show="*", width=45).grid(row=2, column=1, columnspan=2, sticky="w")
+        tk.Label(frm, text="Cohere API Key:").grid(row=1, column=0, sticky="e")
+        tk.Entry(frm, textvariable=self.api_key_var, show="*", width=45).grid(row=1, column=1, columnspan=2, sticky="w")
 
         # Output folder chooser
-        tk.Label(frm, text="Output Folder:").grid(row=3, column=0, sticky="e")
-        tk.Entry(frm, textvariable=self.output_folder, width=45).grid(row=3, column=1, padx=5)
+        tk.Label(frm, text="Output Folder:").grid(row=2, column=0, sticky="e")
+        tk.Entry(frm, textvariable=self.output_folder, width=45).grid(row=2, column=1, padx=5)
         tk.Button(frm, text="Select...",
                   command=lambda: self.output_folder.set(
                       filedialog.askdirectory(title="Select Output Folder")
-                  )).grid(row=3, column=2, padx=5, pady=2)
+                  )).grid(row=2, column=2, padx=5, pady=2)
 
         # Progress log box
-        tk.Label(frm, text="Progress:").grid(row=4, column=0, sticky="nw", pady=(10,0))
+        tk.Label(frm, text="Progress:").grid(row=3, column=0, sticky="nw", pady=(10,0))
         self.log_box = scrolledtext.ScrolledText(frm, width=85, height=14, state="disabled", wrap=tk.WORD)
-        self.log_box.grid(row=4, column=1, columnspan=2, pady=(10,0))
+        self.log_box.grid(row=3, column=1, columnspan=2, pady=(10,0))
 
         # Process button
         self.process_btn = tk.Button(
             frm, text="Process", command=self.on_process_thread,
             bg="#4CAF50", fg="white", width=14
         )
-        self.process_btn.grid(row=5, column=1, pady=12, sticky="w")
+        self.process_btn.grid(row=4, column=1, pady=12, sticky="w")
 
     def log(self, msg):
         self.log_box.config(state="normal")
@@ -101,8 +91,8 @@ class PricelistMatcherApp:
         self.process_btn.config(state=tk.DISABLED)
         try:
             # Validate inputs
-            if not self.pricelist_path.get() or not self.inquiry_path.get():
-                raise RuntimeError("Please select both Pricelist and Inquiry files.")
+            if not self.inquiry_path.get():
+                raise RuntimeError("Please select an Inquiry file.")
             if not self.api_key_var.get().strip():
                 raise RuntimeError("Please enter your Cohere API key.")
             if not self.output_folder.get():
@@ -120,9 +110,9 @@ class PricelistMatcherApp:
                     self.log("Process cancelled by user.")
                     return
 
-            # Load data from Excel
+            # Load data from database
             self.log("Starting processing...")
-            price_descs, price_rates = load_pricelist_data(self.pricelist_path.get(), self.log)
+            price_descs, price_rates = load_pricelist_from_db(self.log)
             wb_inq, items_to_fill, header_rows = load_inquiry_data(self.inquiry_path.get(), self.log)
 
             # Match and fill rates
@@ -153,41 +143,98 @@ class PricelistMatcherApp:
 
 # --- CORE PROCESSING FUNCTIONS ---
 
+SYNONYM_MAP = {
+    "bricks": "brick",
+    "brickwork": "brick",
+    "blocks": "brick",
+    "blockwork": "brick",
+    "cement": "concrete",
+    "concrete": "concrete",
+    "footing": "foundation",
+    "footings": "foundation",
+    "excavation": "excavate",
+    "excavations": "excavate",
+    "excavate": "excavate",
+    "dig": "excavate",
+    "installation": "install",
+    "installing": "install",
+    "installed": "install",
+    "demolition": "demolish",
+    "demolish": "demolish",
+    "demolishing": "demolish",
+    "remove": "demolish",
+    "supply": "provide",
+    "supplies": "provide",
+    "providing": "provide",
+}
+
+STOP_WORDS = {
+    "the","and","of","to","in","for","on","at","by","from","with",
+    "a","an","be","is","are","as","it","its","into","or",
+}
+
+def apply_synonyms(text):
+    parts = []
+    for w in text.split():
+        w = SYNONYM_MAP.get(w, w)
+        if len(w) > 3:
+            w = re.sub(r"(ings|ing|ed|es|s)$", "", w)
+        parts.append(w)
+    return " ".join(parts)
+
+def remove_stop_words(text):
+    return " ".join([w for w in text.split() if w and w not in STOP_WORDS])
+
 def preprocess_text(s):
-    import re
     if not s:
         return ""
-    s = s.lower().strip()
-    s = re.sub(r"\s+", " ", s)
-    # normalize common units/abbreviations
-    s = s.replace("mm.", "mm").replace("cm.", "cm")
-    s = s.replace("r.c.c.", "rcc").replace("reinforced cement concrete", "rcc")
+    s = str(s).lower()
+    s = re.sub(r"[^a-z0-9\s]", " ", s)
+    s = re.sub(r"\b\d+(?:\.\d+)?\b", " ", s)
+    s = re.sub(r"\s+(mm|cm|m|inch|in|ft)\b", " ", s)
+    s = re.sub(r"\s+", " ", s).strip()
+    s = apply_synonyms(s)
+    s = remove_stop_words(s)
     return s
 
-def load_pricelist_data(pricelist_path, logger_fn):
-    logger_fn("Reading pricelist file...")
-    try:
-        wb_price = load_workbook(pricelist_path, read_only=True, data_only=True)
-    except Exception as e:
-        raise RuntimeError(f"Failed to open pricelist file: {e}")
-
+def load_pricelist_from_db(logger_fn):
+    uri = os.getenv("CONNECTION_STRING")
+    if not uri:
+        raise RuntimeError("CONNECTION_STRING environment variable not set")
+    logger_fn("Loading pricelist from database...")
+    client = MongoClient(uri)
+    db = client.get_default_database()
+    col = db["priceitems"]
     descriptions = []
     rates = []
-    for sheet in wb_price.worksheets:
-        logger_fn(f"Processing pricelist sheet '{sheet.title}'...")
-        for row in sheet.iter_rows(values_only=True):
-            if not row or all(cell is None for cell in row):
-                continue
-            desc_val = row[1] if len(row) > 1 else row[0]
-            rate_val = row[-1]
-            if desc_val and rate_val not in (None, "", 0):
-                descriptions.append(preprocess_text(str(desc_val)))
-                rates.append(rate_val)
-    wb_price.close()
+    for doc in col.find({"rate": {"$ne": None}, "unit": {"$exists": True, "$ne": ""}}, {"description":1, "rate":1}):
+        desc = doc.get("description")
+        rate = doc.get("rate")
+        if desc and rate is not None:
+            descriptions.append(preprocess_text(desc))
+            rates.append(rate)
+    client.close()
     if not descriptions:
-        raise RuntimeError("No item descriptions with rates found in pricelist file.")
-    logger_fn(f"Loaded {len(descriptions)} pricelist items.")
+        raise RuntimeError("No item descriptions with rates found in database.")
+    logger_fn(f"Loaded {len(descriptions)} pricelist items from DB.")
     return descriptions, rates
+
+NON_ITEM_PATTERNS = [
+    r'^description', r'^item$', r'^code$', r'^section', r'^chapter',
+    r'^bill', r'^total', r'^sub.?total', r'^ref$', r'^page',
+]
+
+def is_non_item(text):
+    if not text:
+        return True
+    s = str(text).strip().lower()
+    if len(s) <= 2:
+        return True
+    for pat in NON_ITEM_PATTERNS:
+        if re.search(pat, s):
+            return True
+    return False
+
 
 def load_inquiry_data(inquiry_path, logger_fn):
     logger_fn("Reading inquiry file...")
@@ -227,6 +274,8 @@ def load_inquiry_data(inquiry_path, logger_fn):
             rate_cell = sheet.cell(row=r, column=rate_col)
             qty_cell  = sheet.cell(row=r, column=qty_col) if qty_col else None
             if not desc_cell.value or str(desc_cell.value).strip() == "":
+                continue
+            if is_non_item(desc_cell.value):
                 continue
             if qty_col and (qty_cell.value is None or str(qty_cell.value).strip() == ""):
                 continue
