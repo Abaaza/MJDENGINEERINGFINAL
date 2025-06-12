@@ -1,0 +1,8 @@
+# Price Match Versions
+
+This folder contains standalone scripts for matching price list items to inquiry spreadsheets.
+
+- **v0** – Uses both OpenAI and Cohere APIs. Includes `openaipricematcher.py` and `coherepricematcher.py`.
+- **v1** – Uses only Cohere via `coherepricematcher.py`.
+
+Each script provides a simple Tkinter interface to load the inquiry Excel file and output the priced result.
