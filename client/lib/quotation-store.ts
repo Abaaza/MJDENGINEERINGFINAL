@@ -18,10 +18,11 @@ export interface Quotation {
 }
 
 const KEY = 'quotations'
+const base = process.env.NEXT_PUBLIC_API_URL ?? ''
 
 export async function loadQuotations(): Promise<Quotation[]> {
   try {
-    const res = await fetch('/api/quotations', { cache: 'no-store' })
+    const res = await fetch(`${base}/api/quotations`, { cache: 'no-store' })
     if (res.ok) return (await res.json()) as Quotation[]
   } catch {
     // ignore network errors
@@ -37,7 +38,7 @@ export async function loadQuotations(): Promise<Quotation[]> {
 
 export async function saveQuotation(q: Quotation) {
   try {
-    await fetch('/api/quotations', {
+    await fetch(`${base}/api/quotations`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(q),
@@ -55,7 +56,7 @@ export async function saveQuotation(q: Quotation) {
 
 export async function getQuotation(id: string): Promise<Quotation | undefined> {
   try {
-    const res = await fetch(`/api/quotations/${id}`, { cache: 'no-store' })
+    const res = await fetch(`${base}/api/quotations/${id}`, { cache: 'no-store' })
     if (res.ok) return (await res.json()) as Quotation
   } catch {
     // ignore

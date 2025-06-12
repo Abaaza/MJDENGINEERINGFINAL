@@ -1,23 +1,4 @@
-export interface Project {
-  id: string;
-  client: string;
-  type: string;
-  due: string;
-  status: string;
-  value?: number;
-}
-
 const base = process.env.NEXT_PUBLIC_API_URL ?? "";
-
-export async function getProjects(token: string): Promise<Project[]> {
-  const res = await fetch(`${base}/api/projects`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) {
-    throw new Error(`Failed to fetch projects: ${res.status}`);
-  }
-  return res.json();
-}
 
 export async function loginUser(email: string, password: string) {
   const res = await fetch(`${base}/api/auth/login`, {
