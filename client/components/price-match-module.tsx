@@ -109,10 +109,19 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null
     if (loading) {
+      setProgress(0)
+      setTextIndex(0)
       interval = setInterval(() => {
-        setProgress(p => (p >= 100 ? 0 : p + 5))
+        setProgress(p => {
+          const next = p + 1
+          if (next >= 100) {
+            if (interval) clearInterval(interval)
+            return 100
+          }
+          return next
+        })
         setTextIndex(i => (i + 1) % texts.length)
-      }, 500)
+      }, 1000)
     } else {
       setProgress(0)
     }
