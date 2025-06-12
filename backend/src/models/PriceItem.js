@@ -12,6 +12,7 @@ const priceItemSchema = new mongoose.Schema(
     keywords: [String],
     phrases: [String],
     searchText: { type: String },
+    fullContext: { type: String },
   },
   { timestamps: true }
 );
@@ -27,8 +28,24 @@ function buildSearchText(doc) {
   return parts.filter(Boolean).join(' ');
 }
 
+function buildFullContext(doc) {
+  const parts = [
+    `Description: ${doc.description || ''}`,
+    `Keywords: ${(doc.keywords || []).join(', ')}`,
+    `Phrases: ${(doc.phrases || []).join(', ')}`,
+    `Code: ${doc.code || ''}`,
+    `Category: ${doc.category || ''}`,
+    `SubCategory: ${doc.subCategory || ''}`,
+    `Unit: ${doc.unit || ''}`,
+    `Rate: ${doc.rate ?? ''}`,
+    `Ref: ${doc.ref || ''}`
+  ];
+  return parts.join(' | ');
+}
+
 priceItemSchema.pre('save', function (next) {
   this.searchText = buildSearchText(this);
+  this.fullContext = buildFullContext(this);
   next();
 });
 
@@ -37,7 +54,11 @@ priceItemSchema.pre('findOneAndUpdate', async function (next) {
   const doc = await this.model.findOne(this.getQuery()).lean();
   if (doc) {
     const merged = { ...doc, ...update.$set, ...update };
-    update.$set = { ...(update.$set || {}), searchText: buildSearchText(merged) };
+    update.$set = {
+      ...(update.$set || {}),
+      searchText: buildSearchText(merged),
+      fullContext: buildFullContext(merged)
+    };
     this.setUpdate(update);
   }
   next();

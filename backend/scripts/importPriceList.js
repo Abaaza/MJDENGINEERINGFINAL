@@ -5,6 +5,20 @@ import PriceItem from '../src/models/PriceItem.js';
 
 dotenv.config();
 
+function buildFullContext(d) {
+  return [
+    `Description: ${d.description || ''}`,
+    `Keywords: ${(d.keywords || []).join(', ')}`,
+    `Phrases: ${(d.phrases || []).join(', ')}`,
+    `Code: ${d.code || ''}`,
+    `Category: ${d.category || ''}`,
+    `SubCategory: ${d.subCategory || ''}`,
+    `Unit: ${d.unit || ''}`,
+    `Rate: ${d.rate ?? ''}`,
+    `Ref: ${d.ref || ''}`
+  ].join(' | ');
+}
+
 async function main() {
   const conn = process.env.CONNECTION_STRING;
   if (!conn) {
@@ -83,6 +97,7 @@ async function main() {
     ]
       .filter(Boolean)
       .join(' ');
+    item.fullContext = buildFullContext(item);
     items.push(item);
   }
 

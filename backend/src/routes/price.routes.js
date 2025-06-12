@@ -3,6 +3,20 @@ import PriceItem from '../models/PriceItem.js';
 
 const router = Router();
 
+function buildFullContext(d) {
+  return [
+    `Description: ${d.description || ''}`,
+    `Keywords: ${(d.keywords || []).join(', ')}`,
+    `Phrases: ${(d.phrases || []).join(', ')}`,
+    `Code: ${d.code || ''}`,
+    `Category: ${d.category || ''}`,
+    `SubCategory: ${d.subCategory || ''}`,
+    `Unit: ${d.unit || ''}`,
+    `Rate: ${d.rate ?? ''}`,
+    `Ref: ${d.ref || ''}`
+  ].join(' | ');
+}
+
 // List price items with pagination, sorting and optional search
 router.get('/', async (req, res) => {
   const page = Math.max(parseInt(req.query.page) || 1, 1);
@@ -88,6 +102,7 @@ router.post('/', async (req, res) => {
     ]
       .filter(Boolean)
       .join(' ');
+    data.fullContext = buildFullContext(data);
     const doc = await PriceItem.create(data);
     res.status(201).json(doc);
   } catch (err) {
@@ -111,9 +126,10 @@ router.patch('/:id', async (req, res) => {
     ]
       .filter(Boolean)
       .join(' ');
+    const fullContext = buildFullContext(data);
     const doc = await PriceItem.findByIdAndUpdate(
       id,
-      { ...req.body, searchText },
+      { ...req.body, searchText, fullContext },
       { new: true }
     );
     if (!doc) return res.status(404).json({ message: 'Not found' });
