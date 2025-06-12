@@ -314,21 +314,27 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
 
   const exportExcel = () => {
     if (!results || !workbook || !colIdx) return
-    const ws = workbook.Sheets[workbook.SheetNames[0]]
-    const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
-    const out: any[][] = rows.slice(0, headerIndex + 1)
-    results.forEach((r, i) => {
-      const base = rows[headerIndex + 1 + i] ? [...rows[headerIndex + 1 + i]] : Array(headerRow.length).fill('')
-      base[colIdx.desc] = r.inputDescription
-      base[colIdx.qty] = r.quantity
-      const sel = typeof r.selected === 'number' ? r.matches[r.selected] : null
-      if (colIdx.unit >= 0) base[colIdx.unit] = sel?.unit || ''
-      if (colIdx.rate >= 0) base[colIdx.rate] = r.rateOverride ?? sel?.unitRate ?? ''
-      out.push(base)
-    })
-    const outWs = XLSX.utils.aoa_to_sheet(out)
     const outWb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(outWb, outWs, workbook.SheetNames[0])
+    workbook.SheetNames.forEach((name, idx) => {
+      const ws = workbook.Sheets[name]
+      if (idx === 0) {
+        const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
+        results.forEach((r, i) => {
+          const rowIdx = headerIndex + 1 + i
+          const base = rows[rowIdx] ? [...rows[rowIdx]] : Array(headerRow.length).fill('')
+          base[colIdx.desc] = r.inputDescription
+          base[colIdx.qty] = r.quantity
+          const sel = typeof r.selected === 'number' ? r.matches[r.selected] : null
+          if (colIdx.unit >= 0) base[colIdx.unit] = sel?.unit || ''
+          if (colIdx.rate >= 0) base[colIdx.rate] = r.rateOverride ?? sel?.unitRate ?? ''
+          rows[rowIdx] = base
+        })
+        const newWs = XLSX.utils.aoa_to_sheet(rows)
+        XLSX.utils.book_append_sheet(outWb, newWs, name)
+      } else {
+        XLSX.utils.book_append_sheet(outWb, ws, name)
+      }
+    })
     XLSX.writeFile(outWb, 'price_match_output.xlsx')
   }
 
