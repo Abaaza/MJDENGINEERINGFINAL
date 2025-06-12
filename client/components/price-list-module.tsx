@@ -69,6 +69,15 @@ export function PriceListModule() {
     }))
   }
 
+  const startEditing = (id: string) => {
+    const item = items.find(it => it._id === id)
+    if (!item) return
+    setEditing(prev => ({
+      ...prev,
+      [id]: { ...item },
+    }))
+  }
+
   const handleSave = async (id: string) => {
     const upd = editing[id]
     if (!upd) return
@@ -120,6 +129,11 @@ export function PriceListModule() {
   }
 
   const handleDelete = async (id: string) => {
+    const item = items.find(it => it._id === id)
+    const desc = item?.description || "this item"
+    const confirm = window.confirm(`Are you sure you want to delete \"${desc}\"?`)
+    if (!confirm) return
+
     if (id.startsWith("new-")) {
       setItems(itms => itms.filter(it => it._id !== id))
       setEditing(prev => {
@@ -208,74 +222,113 @@ export function PriceListModule() {
               <TableBody>
                 {items.map(item => {
                   const values = editing[item._id ?? ""] || {}
+                  const isEditing = editing[item._id ?? ""] !== undefined
                   return (
                     <TableRow key={item._id} className="border-b border-white/10">
                       <TableCell>
-                        <Input
-                          className="bg-white/5 border-white/10"
-                          value={values.description ?? item.description}
-                          onChange={e => handleChange(item._id!, "description", e.target.value)}
-                        />
+                        {isEditing ? (
+                          <Input
+                            className="bg-white/5 border-white/10"
+                            value={values.description ?? item.description}
+                            onChange={e => handleChange(item._id!, "description", e.target.value)}
+                          />
+                        ) : (
+                          <span>{item.description}</span>
+                        )}
                       </TableCell>
                       <TableCell>
-                        <Input
-                          className="bg-white/5 border-white/10"
-                          value={values.category ?? item.category ?? ""}
-                          onChange={e => handleChange(item._id!, "category", e.target.value)}
-                        />
+                        {isEditing ? (
+                          <Input
+                            className="bg-white/5 border-white/10"
+                            value={values.category ?? item.category ?? ""}
+                            onChange={e => handleChange(item._id!, "category", e.target.value)}
+                          />
+                        ) : (
+                          <span>{item.category}</span>
+                        )}
                       </TableCell>
                       <TableCell>
-                        <Input
-                          className="bg-white/5 border-white/10"
-                          value={values.subCategory ?? item.subCategory ?? ""}
-                          onChange={e => handleChange(item._id!, "subCategory", e.target.value)}
-                        />
+                        {isEditing ? (
+                          <Input
+                            className="bg-white/5 border-white/10"
+                            value={values.subCategory ?? item.subCategory ?? ""}
+                            onChange={e => handleChange(item._id!, "subCategory", e.target.value)}
+                          />
+                        ) : (
+                          <span>{item.subCategory}</span>
+                        )}
                       </TableCell>
                       <TableCell>
-                        <Input
-                          className="bg-white/5 border-white/10"
-                          value={values.unit ?? item.unit ?? ""}
-                          onChange={e => handleChange(item._id!, "unit", e.target.value)}
-                        />
+                        {isEditing ? (
+                          <Input
+                            className="bg-white/5 border-white/10"
+                            value={values.unit ?? item.unit ?? ""}
+                            onChange={e => handleChange(item._id!, "unit", e.target.value)}
+                          />
+                        ) : (
+                          <span>{item.unit}</span>
+                        )}
                       </TableCell>
                       <TableCell>
-                        <Input
-                          type="number"
-                          className="bg-white/5 border-white/10"
-                          value={values.rate ?? item.rate ?? ""}
-                          onChange={e => handleChange(item._id!, "rate", parseFloat(e.target.value))}
-                        />
+                        {isEditing ? (
+                          <Input
+                            type="number"
+                            className="bg-white/5 border-white/10"
+                            value={values.rate ?? item.rate ?? ""}
+                            onChange={e => handleChange(item._id!, "rate", parseFloat(e.target.value))}
+                          />
+                        ) : (
+                          <span>{item.rate}</span>
+                        )}
                       </TableCell>
                       <TableCell>
-                        <Input
-                          className="bg-white/5 border-white/10"
-                          value={values.keywords ?? (item.keywords || []).join(", ")}
-                          onChange={e => handleChange(item._id!, "keywords", e.target.value)}
-                        />
+                        {isEditing ? (
+                          <Input
+                            className="bg-white/5 border-white/10"
+                            value={values.keywords ?? (item.keywords || []).join(", ")}
+                            onChange={e => handleChange(item._id!, "keywords", e.target.value)}
+                          />
+                        ) : (
+                          <span>{(item.keywords || []).join(", ")}</span>
+                        )}
                       </TableCell>
                       <TableCell>
-                        <Input
-                          className="bg-white/5 border-white/10"
-                          value={values.phrases ?? (item.phrases || []).join(", ")}
-                          onChange={e => handleChange(item._id!, "phrases", e.target.value)}
-                        />
+                        {isEditing ? (
+                          <Input
+                            className="bg-white/5 border-white/10"
+                            value={values.phrases ?? (item.phrases || []).join(", ")}
+                            onChange={e => handleChange(item._id!, "phrases", e.target.value)}
+                          />
+                        ) : (
+                          <span>{(item.phrases || []).join(", ")}</span>
+                        )}
                       </TableCell>
-                      <TableCell className="space-x-1">
-                        <Button
-                          size="sm"
-                          onClick={() => handleSave(item._id!)}
-                          className="bg-[#00D4FF]/20 hover:bg-[#00D4FF]/30 text-[#00D4FF] border-[#00D4FF]/30 ripple"
-                        >
-                          Save
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={() => handleDelete(item._id!)}
-                          className="bg-red-500/20 hover:bg-red-500/30 text-red-500 border-red-500/30 ripple"
-                        >
-                          Delete
-                        </Button>
-                      </TableCell>
+                        <TableCell className="space-x-1 flex items-center">
+                          {isEditing ? (
+                            <Button
+                              size="sm"
+                              onClick={() => handleSave(item._id!)}
+                              className="bg-[#00D4FF]/20 hover:bg-[#00D4FF]/30 text-[#00D4FF] border-[#00D4FF]/30 ripple"
+                            >
+                              Save
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              onClick={() => startEditing(item._id!)}
+                              className="bg-[#00D4FF]/20 hover:bg-[#00D4FF]/30 text-[#00D4FF] border-[#00D4FF]/30 ripple"
+                            >
+                              Edit
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            onClick={() => handleDelete(item._id!)}
+                            className="bg-red-500/20 hover:bg-red-500/30 text-red-500 border-red-500/30 ripple"
+                          >
+                            Delete
+                          </Button>
+                        </TableCell>
                     </TableRow>
                   )
                 })}
