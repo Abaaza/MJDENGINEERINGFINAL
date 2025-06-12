@@ -246,7 +246,7 @@ export function parseInputBuffer(buffer) {
   return parseRows(rows, hdr.index);
 }
 
-export function matchItems(inputItems, priceItems, limit = 4) {
+export function matchItems(inputItems, priceItems, limit = 4, candidateLimit = 8) {
   function pickDiverse(sorted) {
     const out = [];
     for (const cand of sorted) {
@@ -265,17 +265,33 @@ export function matchItems(inputItems, priceItems, limit = 4) {
     return out;
   }
 
+  function firstPassScore(a, b) {
+    return jaroWinkler(a, b);
+  }
+
+  function finalScore(a, b) {
+    const jw = jaroWinkler(a, b);
+    const c = cosineSim(a, b);
+    const t = tokenSetRatio(a, b);
+    return 0.4 * jw + 0.4 * c + 0.2 * t;
+  }
+
   return inputItems.map(item => {
-    const scored = [];
+    const prelim = [];
     for (const p of priceItems) {
-      const jw = jaroWinkler(item.descClean, p.descClean);
-      const c = cosineSim(item.descClean, p.descClean);
-      const t = tokenSetRatio(item.descClean, p.descClean);
-      const s = 0.4 * jw + 0.4 * c + 0.2 * t;
-      scored.push({ item: p, score: s });
+      const s = firstPassScore(item.descClean, p.descClean);
+      prelim.push({ item: p, score: s });
     }
-    scored.sort((a, b) => b.score - a.score);
-    const diverse = pickDiverse(scored);
+    prelim.sort((a, b) => b.score - a.score);
+    const candidates = prelim.slice(0, candidateLimit);
+
+    const rescored = candidates.map(c => ({
+      item: c.item,
+      score: finalScore(item.descClean, c.item.descClean)
+    }));
+    rescored.sort((a, b) => b.score - a.score);
+
+    const diverse = pickDiverse(rescored);
     const matches = diverse.map(m => ({
       code: m.item.code,
       description: m.item.description,
@@ -296,5 +312,5 @@ export function matchFromFiles(priceFilePath, inputBuffer) {
   console.log('Price list items loaded:', priceItems.length);
   const inputItems = parseInputBuffer(inputBuffer);
   console.log('Input items parsed:', inputItems.length);
-  return matchItems(inputItems, priceItems, 4);
+  return matchItems(inputItems, priceItems, 4, 12);
 }
