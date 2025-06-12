@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 import {
   getPriceItems,
+  getCategories,
   updatePriceItem,
   createPriceItem,
   deletePriceItem,
@@ -33,6 +34,8 @@ export function PriceListModule() {
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(50)
   const [sort, setSort] = useState("description")
+  const [categories, setCategories] = useState<string[]>([])
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const { token } = useAuth()
 
   const load = async () => {
@@ -44,6 +47,7 @@ export function PriceListModule() {
         limit,
         sort,
         q: search,
+        categories: selectedCategories,
       })
       const normalized = data.items.map(it => ({
         ...it,
@@ -60,7 +64,14 @@ export function PriceListModule() {
 
   useEffect(() => {
     load()
-  }, [search, token, page, limit, sort])
+  }, [search, token, page, limit, sort, selectedCategories])
+
+  useEffect(() => {
+    if (!token) return
+    getCategories(token)
+      .then(setCategories)
+      .catch(err => console.error(err))
+  }, [token])
 
   const handleChange = (id: string, field: keyof PriceItemExt, value: any) => {
     setEditing(prev => ({
@@ -114,12 +125,6 @@ export function PriceListModule() {
     }
   }
 
-  const handleSaveAll = async () => {
-    const ids = Object.keys(editing)
-    for (const id of ids) {
-      await handleSave(id)
-    }
-  }
 
   const handleAdd = () => {
     const id = `new-${Date.now()}`
@@ -186,14 +191,24 @@ export function PriceListModule() {
               <SelectItem value="-rate">Rate ⬇</SelectItem>
             </SelectContent>
           </Select>
-          <Button
-            size="sm"
-            onClick={handleSaveAll}
-            disabled={Object.keys(editing).length === 0}
-            className="bg-[#00D4FF]/20 hover:bg-[#00D4FF]/30 text-[#00D4FF] border-[#00D4FF]/30 ripple"
-          >
-            Save All
-          </Button>
+          <div>
+            <select
+              multiple
+              value={selectedCategories}
+              onChange={e => {
+                const opts = Array.from(e.target.selectedOptions).map(o => o.value)
+                setSelectedCategories(opts)
+                setPage(1)
+              }}
+              className="bg-white/5 border-white/10 text-white text-xs p-1 h-20"
+            >
+              {categories.map(c => (
+                <option key={c} value={c} className="text-black">
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
           <Button
             size="sm"
             onClick={handleAdd}

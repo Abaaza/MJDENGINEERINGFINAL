@@ -16,14 +16,14 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "MJD Construction - Quotation Management Platform",
-  description: "Premium quotation management for MJD Construction Engineering",
+  title: "BOQ Pricing Pro",
+  description: "Premium quotation management for construction projects",
   manifest: "/manifest.json",
   themeColor: "#000000",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "MJD Construction",
+    title: "BOQ Pricing Pro",
   },
   formatDetection: {
     telephone: true,

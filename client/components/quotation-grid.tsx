@@ -229,20 +229,24 @@ export function QuotationGrid() {
                           View
                         </Button>
                       </Link>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-white/20 hover:bg-white/10 ripple mobile-touch"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-white/20 hover:bg-white/10 ripple mobile-touch"
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
+                      <Link href={`/quotations/${quotation.id}?edit=true`}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-white/20 hover:bg-white/10 ripple mobile-touch"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                      <Link href={`/quotations/${quotation.id}?download=true`}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-white/20 hover:bg-white/10 ripple mobile-touch"
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </Link>
                       <Button
                         size="sm"
                         variant="outline"

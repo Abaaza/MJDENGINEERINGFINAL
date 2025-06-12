@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, memo } from "react"
+import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -10,6 +11,7 @@ import { EditableTable } from "@/components/quotations/editable-table"
 import { ClientDrawer } from "@/components/clients/client-drawer"
 import { UploadModule } from "@/components/upload/upload-module"
 import { ArrowLeft, Edit, Save, Send, User } from "lucide-react"
+import ExcelJS from "exceljs"
 import Link from "next/link"
 import { getQuotation, saveQuotation, QuotationItem } from "@/lib/quotation-store"
 import { formatCurrency } from "@/lib/utils"
@@ -37,11 +39,40 @@ interface QuotationData {
 }
 
 export const QuotationDetail = memo(function QuotationDetail({ quotationId }: QuotationDetailProps) {
+  const params = useSearchParams()
   const [isEditing, setIsEditing] = useState(false)
   const [showClientDrawer, setShowClientDrawer] = useState(false)
 
   const [quotation, setQuotation] = useState<QuotationData | null>(null)
   const [items, setItems] = useState<QuotationItem[]>([])
+
+  useEffect(() => {
+    if (params.get('edit') === 'true') {
+      setIsEditing(true)
+    }
+  }, [params])
+
+  const exportExcel = async () => {
+    const wb = new ExcelJS.Workbook()
+    const ws = wb.addWorksheet('Quotation')
+    ws.addRow(['Description', 'Qty', 'Unit', 'Unit Price', 'Total'])
+    items.forEach(it => {
+      ws.addRow([it.description, it.quantity, it.unit, it.unitPrice, it.total])
+    })
+    const buf = await wb.xlsx.writeBuffer()
+    const url = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${quotationId}.xlsx`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  useEffect(() => {
+    if (params.get('download') === 'true') {
+      exportExcel()
+    }
+  }, [params])
 
   useEffect(() => {
     getQuotation(quotationId).then(q => {
@@ -107,6 +138,13 @@ export const QuotationDetail = memo(function QuotationDetail({ quotationId }: Qu
           <Button className="w-full sm:w-auto bg-gradient-to-r from-[#00D4FF] to-[#00FF88] hover:from-[#00D4FF]/80 hover:to-[#00FF88]/80 text-black font-semibold ripple glow-blue">
             <Send className="h-4 w-4 mr-2" />
             Send Quote
+          </Button>
+          <Button
+            variant="outline"
+            onClick={exportExcel}
+            className="w-full sm:w-auto border-white/20 hover:bg-white/10 ripple"
+          >
+            Download
           </Button>
         </div>
       </div>

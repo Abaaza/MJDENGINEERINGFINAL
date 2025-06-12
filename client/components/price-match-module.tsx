@@ -409,18 +409,15 @@ export function PriceMatchModule({ onMatched }: PriceMatchModuleProps) {
               onChange={e => setClientName(e.target.value)}
               className="bg-gray-800/20 border-white/10"
             />
-            <div className="space-y-1">
-              <span className="text-white text-sm">Version</span>
-              <Select value={version} onValueChange={val => setVersion(val as 'v0' | 'v1')}>
-                <SelectTrigger className="w-24 bg-gray-800/20 border-white/10">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="v0">v0</SelectItem>
-                  <SelectItem value="v1">v1</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <Select value={version} onValueChange={val => setVersion(val as 'v0' | 'v1')}>
+              <SelectTrigger className="w-24 bg-gray-800/20 border-white/10">
+                <SelectValue placeholder="Version" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="v0">v0</SelectItem>
+                <SelectItem value="v1">v1</SelectItem>
+              </SelectContent>
+            </Select>
             <Input
               type="file"
               accept=".xlsx,.xls"
